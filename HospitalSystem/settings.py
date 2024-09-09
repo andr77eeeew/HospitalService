@@ -31,6 +31,8 @@ DEBUG = env.bool('DEBUG')
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
 
+AUTH_USER_MODEL = 'users.User'
+
 
 # Application definition
 
@@ -77,6 +79,8 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'HospitalSystem.wsgi.application'
+
+ASGI_APPLICATION = 'HospitalSystem.asgi.application'
 
 
 # Database
@@ -165,9 +169,13 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_ROOT = BASE_DIR / 'static'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
 STATIC_URL = '/static/'
+
+
 MEDIA_ROOT = BASE_DIR / 'media'
+
 MEDIA_URL = '/media/'
 
 # Default primary key field type
