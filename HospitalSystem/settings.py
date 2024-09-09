@@ -45,7 +45,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.postgres',
     'corsheaders',
-    'Users',
+    'users',
 ]
 
 MIDDLEWARE = [
@@ -184,7 +184,7 @@ MEDIA_URL = '/media/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-ACCOUNT_USERNAME_REQUIRED = False    # This removes the username field
+ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_UNIQUE_EMAIL = True
