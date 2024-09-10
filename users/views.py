@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -7,7 +6,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from users.models import User
-from users.serializers import PatientRegisterSerializer, PatientLoginSerializer
+from users.serializers import PatientRegisterSerializer, PatientLoginSerializer, UserSerializer
 
 
 class PatientRegisterView(generics.CreateAPIView):
@@ -37,8 +36,8 @@ class LoginView(generics.GenericAPIView):
                 "user": user.email,
                 "role": user.role.role,
                 "Admin": user.is_staff,
-                "token": str(refresh),
-                "refreshToken": str(refresh.access_token),
+                "refreshToken": str(refresh),
+                "accessToken": str(refresh.access_token),
             })
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -62,3 +61,12 @@ class LogoutView(APIView):
         response.delete_cookie('access')
         response.delete_cookie('refresh')
         return response
+
+
+class UserDetailView(generics.RetrieveAPIView):
+    authentication_classes = [JWTAuthentication, ]
+    permission_classes = [IsAuthenticated, ]
+
+    def get(self, request, **kwargs):
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data)

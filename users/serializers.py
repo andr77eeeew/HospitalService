@@ -9,7 +9,8 @@ User = get_user_model()
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'first_name', 'last_name', 'email', 'phone', 'gender', 'date_birth', 'role', 'sub_role')
+        fields = ('id', 'avatar', 'first_name', 'last_name', 'email', 'phone', 'gender', 'date_birth', 'role',
+                  "sub_role")
 
 
 class PatientRegisterSerializer(serializers.ModelSerializer):
