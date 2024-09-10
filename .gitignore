@@ -186,3 +186,6 @@ cython_debug/
 docker-compose.yaml
 docker-entrypoint.sh
 Dockerfile
+
+
+.idea/
