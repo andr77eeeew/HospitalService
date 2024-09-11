@@ -131,13 +131,3 @@ class DoctorUpdateSerializer(serializers.ModelSerializer):
         )
         user.save()
         return user
-
-
-class DoctorUpdateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ('first_name', 'last_name', 'email', 'phone', 'gender', 'date_birth', 'sub_role', 'password')
-        extra_kwargs = {
-            'password': {'write_only': True},
-            'style': {'input_type': 'password'}
-        }
