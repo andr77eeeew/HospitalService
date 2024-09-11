@@ -1,3 +1,6 @@
+import secrets
+import string
+
 from rest_framework import serializers
 from django.contrib.auth import get_user_model, authenticate
 from users.models import Role, SubRole
@@ -7,6 +10,9 @@ User = get_user_model()
 
 
 class UserSerializer(serializers.ModelSerializer):
+    role = serializers.StringRelatedField()
+    sub_role = serializers.StringRelatedField()
+
     class Meta:
         model = User
         fields = ('id', 'avatar', 'first_name', 'last_name', 'email', 'phone', 'gender', 'date_birth', 'role',
@@ -71,4 +77,67 @@ class PatientLoginSerializer(serializers.Serializer):
         return data
 
 
+class DoctorRegisterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('access_key', 'role')
+        extra_kwargs = {
+            'access_key': {'read_only': True}
+        }
 
+    def create(self, validated_data):
+
+        access_key = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(20))
+
+        try:
+            doctor_role = Role.objects.get(role='doctor')
+        except Role.DoesNotExist:
+            raise serializers.ValidationError({"role": "Role 'doctor' does not exist."})
+
+        # Создаем пользователя через менеджер, чтобы пароль хешировался
+        user = User.objects.create_user(
+            access_key=access_key,
+            role=doctor_role,
+        )
+        return user
+
+
+class DoctorUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('first_name', 'last_name', 'email', 'phone', 'gender', 'date_birth', 'sub_role', 'password')
+        extra_kwargs = {
+            'password': {'write_only': True},
+            'style': {'input_type': 'password'}
+        }
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop('password', None)
+        if not password:
+            raise serializers.ValidationError({"password": "Password is required."})
+
+        sub_role = SubRole.objects.get(sub_role=validated_data.get('sub_role'))
+
+        # Создаем пользователя через менеджер, чтобы пароль хешировался
+        user = User(
+            first_name=validated_data.get('first_name'),
+            last_name=validated_data.get('last_name'),
+            email=validated_data.get('email'),
+            phone=validated_data.get('phone'),
+            sub_role=sub_role,
+            gender=validated_data.get('gender'),
+            date_birth=validated_data.get('date_birth'),
+            password=password,  # передаем пароль
+        )
+        user.save()
+        return user
+
+
+class DoctorUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('first_name', 'last_name', 'email', 'phone', 'gender', 'date_birth', 'sub_role', 'password')
+        extra_kwargs = {
+            'password': {'write_only': True},
+            'style': {'input_type': 'password'}
+        }

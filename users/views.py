@@ -5,8 +5,9 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from users.models import User
-from users.serializers import PatientRegisterSerializer, PatientLoginSerializer, UserSerializer
+from users.models import User, SubRole
+from users.serializers import PatientRegisterSerializer, PatientLoginSerializer, UserSerializer, \
+    DoctorRegisterSerializer, DoctorUpdateSerializer
 
 
 class PatientRegisterView(generics.CreateAPIView):
@@ -22,8 +23,66 @@ class PatientRegisterView(generics.CreateAPIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class LoginView(generics.GenericAPIView):
+class DoctorRegisterView(generics.CreateAPIView):
+    queryset = User.objects.filter(role__role='doctor')
+    permission_classes = (IsAuthenticated,)
+    serializer_class = DoctorRegisterSerializer
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            doctor = serializer.save()
+            return Response({
+                "id": doctor.id,
+                "role": doctor.role.role,
+                "access_key": doctor.access_key,
+                "detail": "Doctor account created successfully"
+            }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DoctorKeyValidatorView(APIView):
+    permission_classes = (AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+
+        access_key = request.data.get('access_key')
+
+        if not access_key:
+            return Response({"detail": "Access key is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(access_key=access_key)
+        except User.DoesNotExist:
+            return Response({"detail": "Invalid access key."}, status=status.HTTP_400_BAD_REQUEST)
+
+        sub_roles = SubRole.objects.all().values('id', 'sub_roles')
+        return Response({
+            "detail": 'Access key is valid',
+            "sub_roles": sub_roles
+        }, status=status.HTTP_200_OK)
+
+
+class DoctorUpdateView(generics.UpdateAPIView):
+    queryset = User.objects.filter(role__role='doctor')
+    permission_classes = (IsAuthenticated,)
+    serializer_class = DoctorUpdateSerializer
+
+    def update(self, request, *args, **kwargs):
+        try:
+            user_id = request.data.get('id')
+            user = User.objects.get(id=user_id, access_key=request.data.get('access_key'))
+        except User.DoesNotExist:
+            return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response({'message': 'Doctor account updated successfully'}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class LoginView(generics.GenericAPIView):
     serializer_class = PatientLoginSerializer
     permission_classes = (AllowAny,)
 
@@ -61,6 +120,24 @@ class LogoutView(APIView):
         response.delete_cookie('access')
         response.delete_cookie('refresh')
         return response
+
+
+class PatientsList(generics.ListAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+    def get_queryset(self):
+        queryset = User.objects.filer(role__role='patient').related_name('role', 'sub_role')
+        return queryset
+
+
+class DoctorList(generics.ListAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+    def get_queryset(self):
+        queryset = User.objects.filer(role__role='doctor').related_name('role', 'sub_role')
+        return queryset
 
 
 class UserDetailView(generics.RetrieveAPIView):
