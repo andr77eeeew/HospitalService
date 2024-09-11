@@ -108,26 +108,27 @@ class DoctorUpdateSerializer(serializers.ModelSerializer):
         fields = ('first_name', 'last_name', 'email', 'phone', 'gender', 'date_birth', 'sub_role', 'password')
         extra_kwargs = {
             'password': {'write_only': True},
-            'style': {'input_type': 'password'}
+            'sub_role': {'required': False},  # Позволяем необязательное поле
         }
 
     def update(self, instance, validated_data):
+        # Извлекаем пароль, если он есть
         password = validated_data.pop('password', None)
-        if not password:
-            raise serializers.ValidationError({"password": "Password is required."})
+        if password:
+            instance.set_password(password)  # Хешируем пароль
 
-        sub_role = SubRole.objects.get(sub_role=validated_data.get('sub_role'))
+        # Обрабатываем поле sub_role, если оно присутствует
+        sub_role_name = validated_data.pop('sub_role', None)
+        if sub_role_name:
+            try:
+                sub_role = SubRole.objects.get(sub_role=sub_role_name)
+                instance.sub_role = sub_role
+            except SubRole.DoesNotExist:
+                raise serializers.ValidationError({"sub_role": "Invalid sub_role."})
 
-        # Создаем пользователя через менеджер, чтобы пароль хешировался
-        user = User(
-            first_name=validated_data.get('first_name'),
-            last_name=validated_data.get('last_name'),
-            email=validated_data.get('email'),
-            phone=validated_data.get('phone'),
-            sub_role=sub_role,
-            gender=validated_data.get('gender'),
-            date_birth=validated_data.get('date_birth'),
-            password=password,  # передаем пароль
-        )
-        user.save()
-        return user
+        # Обновляем остальные поля
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.save()  # Сохраняем изменения
+        return instance

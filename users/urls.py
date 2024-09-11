@@ -11,4 +11,6 @@ urlpatterns = [
     path('doctor/create/', views.DoctorRegisterView.as_view(), name='doctor-create'),
     path('doctor/update/', views.DoctorUpdateView.as_view(), name='doctor-update'),
     path('doctor/key-validate/', views.DoctorKeyValidatorView.as_view(), name='doctor-key-validator'),
+
+    path('users/subroles/', views.GetSubRolesView.as_view(), name='users-subroles'),
 ]

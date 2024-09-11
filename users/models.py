@@ -23,10 +23,10 @@ class CustomUserManager(BaseUserManager):
 
     def create_user(self, email=None, password=None, **extra_fields):
         extra_fields.setdefault('is_active', True)
-        if not email:
-            raise ValueError('The Email field must be set')
-
-        email = self.normalize_email(email)
+        if email:
+            email = self.normalize_email(email)
+        else:
+            email = None
 
         # Добавляем дополнительные поля в user
         first_name = extra_fields.pop('first_name', None)
@@ -78,7 +78,7 @@ class User(AbstractUser):
     first_name = models.CharField(_("first name"), max_length=150, blank=True, null=True)
     last_name = models.CharField(_("last name"), max_length=150, blank=True, null=True)
     avatar = models.ImageField(upload_to='users_avatars', blank=True, null=True)
-    email = models.EmailField(unique=True)
+    email = models.EmailField(unique=True, null=True, blank=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
     access_key = models.CharField(max_length=20, blank=True, null=True, unique=True)
     role = models.ForeignKey(Role, on_delete=models.CASCADE, null=True)

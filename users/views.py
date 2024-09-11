@@ -56,29 +56,43 @@ class DoctorKeyValidatorView(APIView):
         except User.DoesNotExist:
             return Response({"detail": "Invalid access key."}, status=status.HTTP_400_BAD_REQUEST)
 
-        sub_roles = SubRole.objects.all().values('id', 'sub_roles')
+        sub_roles = SubRole.objects.all().values('id', 'sub_role')
         return Response({
             "detail": 'Access key is valid',
+            "id": user.id,
+        }, status=status.HTTP_200_OK)
+
+
+class GetSubRolesView(APIView):
+    permission_classes = (AllowAny,)
+
+    def get(self, request, *args, **kwargs):
+        sub_roles = SubRole.objects.all().values('id', 'sub_role')
+        return Response({
             "sub_roles": sub_roles
         }, status=status.HTTP_200_OK)
 
 
 class DoctorUpdateView(generics.UpdateAPIView):
     queryset = User.objects.filter(role__role='doctor')
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (AllowAny,)
     serializer_class = DoctorUpdateSerializer
 
     def update(self, request, *args, **kwargs):
+        user_id = request.data.get('id')
+
         try:
-            user_id = request.data.get('id')
-            user = User.objects.get(id=user_id, access_key=request.data.get('access_key'))
+            user = User.objects.get(id=user_id)
         except User.DoesNotExist:
             return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        serializer = self.get_serializer(data=request.data)
+        # Получаем сериализатор для обновления существующего объекта
+        serializer = self.get_serializer(user, data=request.data, partial=True)
+
         if serializer.is_valid(raise_exception=True):
             serializer.save()
-            return Response({'message': 'Doctor account updated successfully'}, status=status.HTTP_201_CREATED)
+            return Response({'message': 'Doctor account updated successfully'}, status=status.HTTP_200_OK)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
