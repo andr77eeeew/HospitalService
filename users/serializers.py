@@ -12,11 +12,18 @@ User = get_user_model()
 class UserSerializer(serializers.ModelSerializer):
     role = serializers.StringRelatedField()
     sub_role = serializers.StringRelatedField()
+    avatar = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = ('id', 'avatar', 'first_name', 'last_name', 'email', 'phone', 'gender', 'date_birth', 'role',
                   "sub_role")
+
+    def get_avatar(self, obj):
+        request = self.context.get('request')
+        if obj.avatar:
+            return request.build_absolute_uri(obj.avatar.url)
+        return None
 
 
 class PatientRegisterSerializer(serializers.ModelSerializer):

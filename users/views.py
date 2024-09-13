@@ -160,7 +160,7 @@ class UserDetailView(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated, ]
 
     def get(self, request, **kwargs):
-        serializer = UserSerializer(request.user)
+        serializer = UserSerializer(request.user, context={'request': request})
         return Response(serializer.data)
 
 
