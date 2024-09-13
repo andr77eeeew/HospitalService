@@ -132,3 +132,31 @@ class DoctorUpdateSerializer(serializers.ModelSerializer):
 
         instance.save()  # Сохраняем изменения
         return instance
+
+
+class UserUpdateProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('avatar', 'first_name', 'last_name', 'email', 'phone', 'password')
+        extra_kwargs = {
+            'password': {'write_only': True},
+        }
+
+    def update(self, instance, validated_data):
+        # Извлекаем пароль, если он есть
+        password = validated_data.pop('password', None)
+        if password:
+            instance.set_password(password)
+
+        # Обновляем остальные поля напрямую
+        instance.avatar = validated_data.get('avatar', instance.avatar)
+        instance.first_name = validated_data.get('first_name', instance.first_name)
+        instance.last_name = validated_data.get('last_name', instance.last_name)
+        instance.email = validated_data.get('email', instance.email)
+        instance.phone = validated_data.get('phone', instance.phone)
+
+        # Сохраняем изменения
+        instance.save()
+
+        return instance
+
