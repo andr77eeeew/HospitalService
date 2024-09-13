@@ -1,4 +1,5 @@
 from rest_framework import generics, status
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -7,7 +8,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from users.models import User, SubRole
 from users.serializers import PatientRegisterSerializer, PatientLoginSerializer, UserSerializer, \
-    DoctorRegisterSerializer, DoctorUpdateSerializer
+    DoctorRegisterSerializer, DoctorUpdateSerializer, UserUpdateProfileSerializer
 
 
 class PatientRegisterView(generics.CreateAPIView):
@@ -159,5 +160,24 @@ class UserDetailView(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated, ]
 
     def get(self, request, **kwargs):
-        serializer = UserSerializer(request.user)
+        serializer = UserSerializer(request.user, context={'request': request})
         return Response(serializer.data)
+
+
+class UserUpdateView(generics.UpdateAPIView):
+    authentication_classes = [JWTAuthentication, ]
+    permission_classes = [IsAuthenticated, ]
+    serializer_class = UserUpdateProfileSerializer
+    parser_classes = [MultiPartParser, FormParser]
+
+
+    def get_user(self):
+        return self.request.user
+
+    def update(self, request, *args, **kwargs):
+        user = self.get_user()
+        serializer = self.get_serializer(user, data=request.data, partial=True)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

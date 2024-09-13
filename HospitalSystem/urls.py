@@ -20,6 +20,11 @@ from django.views.static import serve
 from django.conf import settings
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
+static_and_media_urls = [
+    path('static/<path:path>', serve, {'document_root': settings.STATIC_ROOT}),
+    path('media/<path:path>', serve, {'document_root': settings.MEDIA_ROOT}),
+]
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
@@ -27,9 +32,5 @@ urlpatterns = [
     path('users/', include('users.urls')),
 ]
 
-static_and_media_urls = [
-    path('static/<path:path>', serve, {'document_root': settings.STATIC_ROOT}),
-    path('media/<path:path>', serve, {'document_root': settings.MEDIA_ROOT}),
-]
-
+# Добавляем статические и медиа файлы
 urlpatterns += static_and_media_urls
