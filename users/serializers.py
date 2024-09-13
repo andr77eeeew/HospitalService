@@ -80,7 +80,7 @@ class PatientLoginSerializer(serializers.Serializer):
 class DoctorRegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('access_key', 'role')
+        fields = ('access_key', 'role', 'email')
         extra_kwargs = {
             'access_key': {'read_only': True}
         }
@@ -94,10 +94,13 @@ class DoctorRegisterSerializer(serializers.ModelSerializer):
         except Role.DoesNotExist:
             raise serializers.ValidationError({"role": "Role 'doctor' does not exist."})
 
+        email = validated_data.get('email')
+
         # Создаем пользователя через менеджер, чтобы пароль хешировался
         user = User.objects.create_user(
             access_key=access_key,
             role=doctor_role,
+            email=email,
         )
         return user
 

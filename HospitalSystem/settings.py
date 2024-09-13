@@ -44,7 +44,7 @@ REST_FRAMEWORK = {
 
 SIMPLE_JWT = {
     # Время жизни access токена (чаще всего это 5-15 минут)
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=7),
 
     # Время жизни refresh токена (чаще всего это 1 день или больше)
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
@@ -186,18 +186,24 @@ AUTH_PASSWORD_VALIDATORS = [
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
-    'http://127.0.0.1:5173',
 ]
 
 CORS_ORIGIN_WHITELIST = [
     'http://localhost:5173',
-    'http://127.0.0.1:5173',
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:5173',
-    'http://127.0.0.1:5173',
 ]
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_HOST_USER = env.str('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = env.str('EMAIL_HOST_PASSWORD')
+EMAIL_USE_TLS = True
+SERVER_EMAIL = EMAIL_HOST_USER
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 CORS_ALLOW_METHODS = (
     "DELETE",

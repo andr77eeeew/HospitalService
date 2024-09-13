@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.core.mail import send_mail
 
 from users.models import User, SubRole
 from users.serializers import PatientRegisterSerializer, PatientLoginSerializer, UserSerializer, \
@@ -32,6 +33,13 @@ class DoctorRegisterView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             doctor = serializer.save()
+            send_mail(
+                f"Hello, {doctor.role.role}!",
+                "This is your access key for your doctor account: " + doctor.access_key,
+                from_email=None,
+                recipient_list=[doctor.email],
+                fail_silently=False
+            )
             return Response({
                 "id": doctor.id,
                 "role": doctor.role.role,
@@ -56,7 +64,6 @@ class DoctorKeyValidatorView(APIView):
         except User.DoesNotExist:
             return Response({"detail": "Invalid access key."}, status=status.HTTP_400_BAD_REQUEST)
 
-        sub_roles = SubRole.objects.all().values('id', 'sub_role')
         return Response({
             "detail": 'Access key is valid',
             "id": user.id,
@@ -111,7 +118,7 @@ class LoginView(generics.GenericAPIView):
                 "Admin": user.is_staff,
                 "refreshToken": str(refresh),
                 "accessToken": str(refresh.access_token),
-            })
+            }, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
