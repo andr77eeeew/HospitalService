@@ -11,7 +11,6 @@ from doctor.serializers import DoctorSerializer, AppointmentTimesSerializer
 from users.models import User
 from patient.models import Appointment
 
-
 # Create your views here.
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -21,14 +20,18 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
+
 class SpecialistList(APIView):
+
     def get(self, request, *args, **kwargs):
         if request.user.role.role != 'doctor':
-            specialization = request.data.get('specialization')  # Используйте query_params для GET-запроса
+            specialization = request.query_params.get('specialization')  # Используйте query_params для GET-запроса
+            logger.debug("Specialization: %s", specialization)
             queryset = User.objects.filter(role__role='doctor', sub_role__sub_role=specialization)
+            logger.debug("Queryset: %s", queryset)
             serializer = DoctorSerializer(queryset, many=True, context={'request': request})
+            logger.debug("Serializer: %s", serializer)
             return Response(serializer.data)
-
 
 
 class AllSpecialistList(ListAPIView):
@@ -42,8 +45,8 @@ class AllSpecialistList(ListAPIView):
 
 class ReturnTimeList(ListAPIView):
     def get(self, request, *args, **kwargs):
-        date_str = request.data.get('date')
-        doctor = request.data.get('doctor')
+        date_str = request.query_params.get('date')
+        doctor = request.query_params.get('doctor')
 
         logger.debug("Received date: %s", date_str)
         logger.debug("Received doctor: %s", doctor)
@@ -52,17 +55,14 @@ class ReturnTimeList(ListAPIView):
             logger.error("Date or doctor is missing in request parameters.")
             return Response({"error": "Date or doctor parameter is missing"}, status=400)
 
-        # Преобразуем строку даты в datetime.date
         date = parse_date(date_str)
         if date is None:
             logger.error("Invalid date format provided.")
             return Response({"error": "Invalid date format"}, status=400)
 
-        # Преобразуем TIME_CHOICES в формат времени
         TIME_CHOICES = [t[0] for t in Appointment.TIME_CHOICES]
         logger.debug("TIME_CHOICES: %s", TIME_CHOICES)
 
-        # Получаем занятые часы
         try:
             busy_times = Appointment.objects.filter(date=date, doctor=doctor).values_list('time', flat=True)
         except Exception as e:
@@ -71,15 +71,16 @@ class ReturnTimeList(ListAPIView):
 
         logger.debug("Busy times from DB: %s", busy_times)
 
-        # Преобразуем занятые часы в формат времени для сравнения
         busy_times_set = set(busy_times)
         logger.debug("Busy times set: %s", busy_times_set)
 
-        # Создаем словарь со всеми часами и их статусом
-        time_status = {t.strftime('%H:%M:%S'): (t in busy_times_set) for t in TIME_CHOICES}
-        logger.debug("Time status: %s", time_status)
+        time_status_list = [
+            {"time": t.strftime('%H:%M'), "value": t.strftime('%H:%M:%S'), "is_available": (t not in busy_times_set)}
+            for t in TIME_CHOICES
+        ]
+        logger.debug("Time status list: %s", time_status_list)
 
-        return Response(time_status)
+        return Response(time_status_list)
 
 # class BusyDates(ListAPIView):
 #

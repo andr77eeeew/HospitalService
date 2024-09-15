@@ -34,14 +34,14 @@ ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
 AUTH_USER_MODEL = 'users.User'
 
 REST_FRAMEWORK = {
-    'DEFAULT_PERMISSION_CLASSES': (
+    'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
-    ),
-    'DEFAULT_AUTHENTICATION_CLASSES': (
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
-    'TIME_INPUT_FORMATS': ('%H:%M', ),
-    'TIME_FORMAT': ('%H:%M', ),
+    ],
+    'TIME_INPUT_FORMATS': ['%H:%M', ],
+    'TIME_FORMAT': ['%H:%M', ],
 }
 
 SIMPLE_JWT = {

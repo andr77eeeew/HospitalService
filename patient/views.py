@@ -1,3 +1,5 @@
+import logging
+
 from django.shortcuts import render
 import rest_framework.generics as generics
 from rest_framework import status
@@ -5,10 +7,17 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from patient.serializers import PatientSerializer, CreateAppointmentSerializer
+from patient.models import Appointment
+from patient.serializers import PatientSerializer, CreateAppointmentSerializer, AppointmentSerializer
 from users.models import User
 
-
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+handler = logging.StreamHandler()
+handler.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
 # Create your views here.
 
 class PatientsList(generics.ListAPIView):
@@ -21,13 +30,31 @@ class PatientsList(generics.ListAPIView):
 
 
 class CreateAppointmentView(generics.CreateAPIView):
+    authentication_classes = (JWTAuthentication,)
+    permission_classes = (IsAuthenticated,)
     serializer_class = CreateAppointmentSerializer
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
 
-    def perform_create(self, request, *args, **kwargs):
-        serailizer = self.get_serializer(data=request.data)
-        if serailizer.is_valid(raise_exception=True):
-            serailizer.save()
-            return Response(serailizer.data, status=status.HTTP_201_CREATED)
-        return Response(serailizer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def perform_create(self, serializer):
+        patient = self.request.user
+        logger.debug(f"Request user: {patient}")
+        if patient.role.role == 'patient':
+            if serializer.is_valid(raise_exception=True):
+                # Сохранение данных
+                serializer.save(patient=patient)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class GetAppointmentForUserView(generics.ListAPIView):
+    authentication_classes = (JWTAuthentication,)
+    permission_classes = (IsAuthenticated,)
+    serializer_class = AppointmentSerializer
+
+    def get_queryset(self):
+        patient = self.request.user
+        logger.debug(f"Request user: {patient}")
+        if patient.role.role == 'patient':
+            appointments = Appointment.objects.filter(patient=patient)
+            return appointments
+
+        return None
