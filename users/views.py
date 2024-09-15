@@ -137,24 +137,6 @@ class LogoutView(APIView):
         return response
 
 
-class PatientsList(generics.ListAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-
-    def get_queryset(self):
-        queryset = User.objects.filer(role__role='patient').related_name('role', 'sub_role')
-        return queryset
-
-
-class DoctorList(generics.ListAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-
-    def get_queryset(self):
-        queryset = User.objects.filer(role__role='doctor').related_name('role', 'sub_role')
-        return queryset
-
-
 class UserDetailView(generics.RetrieveAPIView):
     authentication_classes = [JWTAuthentication, ]
     permission_classes = [IsAuthenticated, ]
