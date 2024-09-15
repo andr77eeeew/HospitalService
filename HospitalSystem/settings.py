@@ -40,11 +40,13 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'TIME_INPUT_FORMATS': ('%H:%M', ),
+    'TIME_FORMAT': ('%H:%M', ),
 }
 
 SIMPLE_JWT = {
     # Время жизни access токена (чаще всего это 5-15 минут)
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=7),
 
     # Время жизни refresh токена (чаще всего это 1 день или больше)
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
@@ -115,6 +117,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'users',
+    'patient',
+    'doctor',
 ]
 
 MIDDLEWARE = [
