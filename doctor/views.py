@@ -1,3 +1,4 @@
+from django.core.mail import send_mail
 from django.utils.dateparse import parse_date
 from rest_framework import status
 from rest_framework.generics import ListAPIView, UpdateAPIView, CreateAPIView
@@ -8,6 +9,7 @@ from rest_framework.views import APIView
 from doctor.serializers import DoctorSerializer, DoctorRegisterSerializer, DoctorUpdateSerializer
 from users.models import User, SubRole
 from patient.models import Appointment
+
 
 class SpecialistList(APIView):
 
@@ -49,7 +51,6 @@ class ReturnTimeList(ListAPIView):
         except Exception as e:
             return Response({"error": "Error fetching data from the database"}, status=500)
 
-
         busy_times_set = set(busy_times)
 
         time_status_list = [
@@ -83,6 +84,13 @@ class DoctorRegisterView(CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             doctor = serializer.save()
+            send_mail(
+                f"Hello, {doctor.role.role}!",
+                "This is your access key for your doctor account: " + doctor.access_key,
+                from_email=None,
+                recipient_list=[doctor.email],
+                fail_silently=False
+            )
             return Response({
                 "id": doctor.id,
                 "role": doctor.role.role,
@@ -107,7 +115,6 @@ class DoctorKeyValidatorView(APIView):
         except User.DoesNotExist:
             return Response({"detail": "Invalid access key."}, status=status.HTTP_400_BAD_REQUEST)
 
-        sub_roles = SubRole.objects.all().values('id', 'sub_role')
         return Response({
             "detail": 'Access key is valid',
             "id": user.id,
