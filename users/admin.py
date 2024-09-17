@@ -1,4 +1,6 @@
 from django.contrib import admin
+
+from patient.models import Appointment
 from .models import User, Role, SubRole
 
 @admin.register(User)
@@ -12,3 +14,7 @@ class RoleAdmin(admin.ModelAdmin):
 @admin.register(SubRole)
 class SubRoleAdmin(admin.ModelAdmin):
     list_display = ('main_role', 'sub_role')
+
+@admin.register(Appointment)
+class AppointmentAdmin(admin.ModelAdmin):
+    list_display = ('patient', 'doctor', 'date', 'time', 'message', 'created_at')
