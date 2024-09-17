@@ -45,61 +45,27 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    # Время жизни access токена (чаще всего это 5-15 минут)
     'ACCESS_TOKEN_LIFETIME': timedelta(days=7),
-
-    # Время жизни refresh токена (чаще всего это 1 день или больше)
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-
-    # Время жизни токена для подтверждения (для использования с функцией "обновить пароль" или другими подтверждениями)
-    'ROTATE_REFRESH_TOKENS': True,  # Автоматически обновляет refresh токен при использовании
-
-    # Удаление старого refresh токена при обновлении (защита от утечки)
-    'BLACKLIST_AFTER_ROTATION': True,  # Добавляет старый refresh токен в черный список после ротации
-
-    # Защита от повторного использования refresh токена
-    'UPDATE_LAST_LOGIN': True,  # Обновляет поле последнего входа при успешном использовании токена
-
-    # Аутентификационный заголовок (используется Bearer токен)
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': True,
     'AUTH_HEADER_TYPES': ('Bearer',),
-
-    # Аутентификация с использованием Cookies (например, для безопасных приложений)
-    'AUTH_COOKIE': 'access_token',  # Имя cookie для хранения access токена
-    'AUTH_COOKIE_REFRESH': 'refresh_token',  # Имя cookie для хранения refresh токена
-    'AUTH_COOKIE_SECURE': False,  # Включение secure флага для передачи cookie только по HTTPS
-    'AUTH_COOKIE_HTTP_ONLY': True,  # Защита от доступа к cookie через JavaScript
-    'AUTH_COOKIE_PATH': '/',  # Путь для доступа к cookie
-    'AUTH_COOKIE_SAMESITE': 'Lax',  # Политика SameSite (может быть 'Lax', 'Strict', 'None')
-
-    # Алгоритм кодирования токенов (по умолчанию HS256, но можно выбрать RS256 для использования с ключами)
+    'AUTH_COOKIE': 'access_token',
+    'AUTH_COOKIE_REFRESH': 'refresh_token',
+    'AUTH_COOKIE_SECURE': False,
+    'AUTH_COOKIE_HTTP_ONLY': True,
+    'AUTH_COOKIE_PATH': '/',
+    'AUTH_COOKIE_SAMESITE': 'Lax',
     'ALGORITHM': 'HS256',
-
-    # Секретный ключ (используется для кодирования токенов, должен быть достаточно надежным)
-    'SIGNING_KEY': SECRET_KEY,  # Ваш Django SECRET_KEY
-
-    # Удаление токена при его недействительности
+    'SIGNING_KEY': SECRET_KEY,
     'VERIFYING_KEY': None,
-
-    # Логирование доступа через JWT
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
-
-    # Разрешение использования JTI claim для защиты от повторного использования токенов
     'JTI_CLAIM': 'jti',
-
-    # Признак субъекта токена (уникальный идентификатор пользователя)
-    'USER_ID_FIELD': 'id',  # Поле модели, используемое в качестве ID пользователя
-
-    # Название поля, используемого для хранения идентификатора пользователя в токене
+    'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'id',
-
-    # Включение blacklisting
-    'TOKEN_BLACKLIST_ENABLED': True,  # Активация системы черного списка токенов
-
-    # Опциональные настройки для OAuth2 (если используется)
-    'AUTH_COOKIE_DOMAIN': None,  # Домен для доступа к cookie (если используется несколько доменов)
-
-    # Настройки для работы с часами (выполнение проверки времени жизни токена)
-    'LEEWAY': 0,  # Допустимая погрешность времени (например, для серверов с разными часами)
+    'TOKEN_BLACKLIST_ENABLED': True,
+    'LEEWAY': 0,
 }
 
 # Application definition
@@ -119,6 +85,7 @@ INSTALLED_APPS = [
     'users',
     'patient',
     'doctor',
+    'appointment',
 ]
 
 MIDDLEWARE = [

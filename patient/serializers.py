@@ -1,9 +1,5 @@
-from datetime import datetime
-
-from .models import Appointment
 from rest_framework import serializers
-from users.models import User
-
+from users.models import User, Role
 
 
 class PatientSerializer(serializers.ModelSerializer):
@@ -21,54 +17,36 @@ class PatientSerializer(serializers.ModelSerializer):
         return None
 
 
-
-class AppointmentSerializer(serializers.ModelSerializer):
-    patient_name = serializers.SerializerMethodField()
-    doctor_name = serializers.SerializerMethodField()
-    doctor_id = serializers.SerializerMethodField()
-
+class PatientRegisterSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Appointment
-        fields = ('id', 'date', 'time', 'message', 'created_at', 'doctor_id', 'patient_name', 'doctor_name')
-
-    def get_patient_name(self, obj):
-        return f"{obj.patient.first_name} {obj.patient.last_name}"
-
-    def get_doctor_name(self, obj):
-        return f"{obj.doctor.first_name} {obj.doctor.last_name}"
-
-    def doctor_id(self, obj):
-        return obj.doctor.id
-
-class CreateAppointmentSerializer(serializers.ModelSerializer):
-    doctor = serializers.PrimaryKeyRelatedField(queryset=User.objects.filter(role__role='doctor'))
-    class Meta:
-        model = Appointment
-        fields = ('patient', 'doctor', 'date', 'time', 'message')
+        model = User
+        fields = ('first_name', 'last_name', 'email', 'phone', 'role', 'gender', 'date_birth', 'password')
         extra_kwargs = {
-            'patient': {'required': False},
-            'doctor': {'required': True},
+            'password': {'write_only': True},
+            'style': {'input_type': 'password'}
         }
 
     def create(self, validated_data):
-        doctor = validated_data['doctor']
-        request = self.context.get('request')
-        patient = request.user if request else None
+        # Попробуем получить роль пациента, обработаем исключение, если роль не найдена
+        try:
+            patient_role = Role.objects.get(role='patient')
+        except Role.DoesNotExist:
+            raise serializers.ValidationError({"role": "Role 'patient' does not exist."})
 
-        if not patient or patient.role.role != 'patient':
-            raise serializers.ValidationError("You are not a patient")
+        # Извлекаем и проверяем пароль
+        password = validated_data.pop('password', None)
+        if not password:
+            raise serializers.ValidationError({"password": "Password is required."})
 
-        date_str = validated_data.get('date')
-        time_str = validated_data.get('time')
-
-
-
-        appointment = Appointment.objects.create(
-            patient=patient,
-            doctor=doctor,
-            date=date_str,
-            time=time_str,
-            message=validated_data.get('message', '')
+        # Создаем пользователя через менеджер, чтобы пароль хешировался
+        user = User.objects.create_user(
+            first_name=validated_data.get('first_name'),
+            last_name=validated_data.get('last_name'),
+            email=validated_data.get('email'),
+            phone=validated_data.get('phone'),
+            role=patient_role,
+            gender=validated_data.get('gender'),
+            date_birth=validated_data.get('date_birth'),
+            password=password,  # передаем пароль
         )
-
-        return appointment
+        return user

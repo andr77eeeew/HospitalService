@@ -1,36 +1,21 @@
-import logging
-from datetime import datetime
-
-from django.shortcuts import render
 from django.utils.dateparse import parse_date
-from rest_framework.generics import ListAPIView
+from rest_framework import status
+from rest_framework.generics import ListAPIView, UpdateAPIView, CreateAPIView
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from doctor.serializers import DoctorSerializer, AppointmentTimesSerializer
-from users.models import User
+from doctor.serializers import DoctorSerializer, DoctorRegisterSerializer, DoctorUpdateSerializer
+from users.models import User, SubRole
 from patient.models import Appointment
-
-# Create your views here.
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-handler = logging.StreamHandler()
-handler.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-handler.setFormatter(formatter)
-logger.addHandler(handler)
-
 
 class SpecialistList(APIView):
 
     def get(self, request, *args, **kwargs):
         if request.user.role.role != 'doctor':
-            specialization = request.query_params.get('specialization')  # Используйте query_params для GET-запроса
-            logger.debug("Specialization: %s", specialization)
+            specialization = request.query_params.get('specialization')
             queryset = User.objects.filter(role__role='doctor', sub_role__sub_role=specialization)
-            logger.debug("Queryset: %s", queryset)
             serializer = DoctorSerializer(queryset, many=True, context={'request': request})
-            logger.debug("Serializer: %s", serializer)
             return Response(serializer.data)
 
 
@@ -44,45 +29,36 @@ class AllSpecialistList(ListAPIView):
         return Response(serializer.data)
 
 
-
 class ReturnTimeList(ListAPIView):
+
     def get(self, request, *args, **kwargs):
         date_str = request.query_params.get('date')
         doctor = request.query_params.get('doctor')
 
-        logger.debug("Received date: %s", date_str)
-        logger.debug("Received doctor: %s", doctor)
-
         if date_str is None or doctor is None:
-            logger.error("Date or doctor is missing in request parameters.")
             return Response({"error": "Date or doctor parameter is missing"}, status=400)
 
         date = parse_date(date_str)
         if date is None:
-            logger.error("Invalid date format provided.")
             return Response({"error": "Invalid date format"}, status=400)
 
         TIME_CHOICES = [t[0] for t in Appointment.TIME_CHOICES]
-        logger.debug("TIME_CHOICES: %s", TIME_CHOICES)
 
         try:
             busy_times = Appointment.objects.filter(date=date, doctor=doctor).values_list('time', flat=True)
         except Exception as e:
-            logger.error("Error fetching busy times: %s", e)
             return Response({"error": "Error fetching data from the database"}, status=500)
 
-        logger.debug("Busy times from DB: %s", busy_times)
 
         busy_times_set = set(busy_times)
-        logger.debug("Busy times set: %s", busy_times_set)
 
         time_status_list = [
             {"time": t.strftime('%H:%M'), "value": t.strftime('%H:%M:%S'), "is_available": (t not in busy_times_set)}
             for t in TIME_CHOICES
         ]
-        logger.debug("Time status list: %s", time_status_list)
 
         return Response(time_status_list)
+
 
 # class BusyDates(ListAPIView):
 #
@@ -96,3 +72,66 @@ class ReturnTimeList(ListAPIView):
 #         if not available_times.difference(busy_times):
 #             return target_date
 #         return None
+
+
+class DoctorRegisterView(CreateAPIView):
+    queryset = User.objects.filter(role__role='doctor')
+    permission_classes = (IsAuthenticated,)
+    serializer_class = DoctorRegisterSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            doctor = serializer.save()
+            return Response({
+                "id": doctor.id,
+                "role": doctor.role.role,
+                "access_key": doctor.access_key,
+                "detail": "Doctor account created successfully"
+            }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DoctorKeyValidatorView(APIView):
+    permission_classes = (AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+
+        access_key = request.data.get('access_key')
+
+        if not access_key:
+            return Response({"detail": "Access key is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(access_key=access_key)
+        except User.DoesNotExist:
+            return Response({"detail": "Invalid access key."}, status=status.HTTP_400_BAD_REQUEST)
+
+        sub_roles = SubRole.objects.all().values('id', 'sub_role')
+        return Response({
+            "detail": 'Access key is valid',
+            "id": user.id,
+        }, status=status.HTTP_200_OK)
+
+
+class DoctorUpdateView(UpdateAPIView):
+    queryset = User.objects.filter(role__role='doctor')
+    permission_classes = (AllowAny,)
+    serializer_class = DoctorUpdateSerializer
+
+    def update(self, request, *args, **kwargs):
+        user_id = request.data.get('id')
+
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Получаем сериализатор для обновления существующего объекта
+        serializer = self.get_serializer(user, data=request.data, partial=True)
+
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response({'message': 'Doctor account updated successfully'}, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
