@@ -1,4 +1,5 @@
 from rest_framework import generics, status
+from django.shortcuts import get_object_or_404
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -163,3 +164,15 @@ class UserUpdateView(generics.UpdateAPIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class GetSpecificUserView(generics.RetrieveAPIView):
+    serializer_class = UserSerializer
+    lookup_field = 'user_id'
+    lookup_url_kwarg = 'user_id'
+
+    def get(self, request, *args, **kwargs):
+        user_id = request.query_params.get('user_id')
+        user = get_object_or_404(User, id=user_id)
+        serializer = self.serializer_class(user, context={'request': request})
+        return Response(serializer.data)

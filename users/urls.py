@@ -8,6 +8,7 @@ urlpatterns = [
     path('logout/', views.LogoutView.as_view(), name='logout'),
     path('detail/', views.UserDetailView.as_view(), name='detail'),
     path('update/', views.UserUpdateView.as_view(), name='update'),
+    path('specific/', views.GetSpecificUserView.as_view(), name='specific'),
 
     path('doctor/create/', views.DoctorRegisterView.as_view(), name='doctor-create'),
     path('doctor/update/', views.DoctorUpdateView.as_view(), name='doctor-update'),
