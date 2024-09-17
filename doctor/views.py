@@ -35,12 +35,14 @@ class SpecialistList(APIView):
 
 
 class AllSpecialistList(ListAPIView):
-    queryset = User.objects.all()
+    queryset = User.objects.filter(role__role='doctor')
     serializer_class = DoctorSerializer
 
     def get(self, request, *args, **kwargs):
         queryset = User.objects.filter(role__role='doctor')
-        return Response(queryset)
+        serializer = DoctorSerializer(queryset, many=True, context={'request': request})
+        return Response(serializer.data)
+
 
 
 class ReturnTimeList(ListAPIView):
