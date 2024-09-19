@@ -24,6 +24,7 @@ class SpecialistList(APIView):
 class AllSpecialistList(ListAPIView):
     queryset = User.objects.filter(role__role='doctor')
     serializer_class = DoctorSerializer
+    permission_classes = (AllowAny,)
 
     def get(self, request, *args, **kwargs):
         queryset = User.objects.filter(role__role='doctor')
