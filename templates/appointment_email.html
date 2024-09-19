@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Назначение встречи</title>
+</head>
+<body>
+<h1>Назначение встречи</h1>
+<p>Уважаемый {{ patient_name }}!</p>
+<p>Вы назначили встречу c {{ doctor_name }} на {{ date }} в {{ time|time:"H:i" }}.</p>
+<p>Если у вас есть вопросы или вам нужно отменить встречу</p>
+<p>Спасибо за выбор нашего сервиса!</p>
+
+{#<a href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Прием+у+врача+{{ doctor_name }}&dates={{ appointment.date|date:"Ymd" }}T{{ appointment.time|time:"Hi00" }}/{{ appointment.date|date:"Ymd" }}T{{ appointment.time|time_add:60|time:"Hi00" }}&details=Напоминание+о+приеме+у+{{ doctor_name }}&location=Ваш+адрес+клиники" target="_blank">#}
+{#    Add to Google Calendar#}
+{#</a>#}
+</body>
+</html>
