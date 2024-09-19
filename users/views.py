@@ -15,7 +15,7 @@ class GetSubRolesView(APIView):
     permission_classes = (AllowAny,)
 
     def get(self, *args, **kwargs):
-        doctor_role='doctor'
+        doctor_role = 'doctor'
 
         sub_roles = SubRole.objects.filter(
             user__role__role=doctor_role
@@ -24,6 +24,7 @@ class GetSubRolesView(APIView):
         return Response({
             "sub_roles": sub_roles
         }, status=status.HTTP_200_OK)
+
 
 class LoginView(generics.GenericAPIView):
     serializer_class = LoginSerializer
@@ -80,7 +81,6 @@ class UserUpdateView(generics.UpdateAPIView):
     serializer_class = UserUpdateProfileSerializer
     parser_classes = [MultiPartParser, FormParser]
 
-
     def get_user(self):
         return self.request.user
 
@@ -100,6 +100,11 @@ class GetSpecificUserView(generics.RetrieveAPIView):
 
     def get(self, request, *args, **kwargs):
         user_id = request.query_params.get('user_id')
-        user = get_object_or_404(User, id=user_id)
-        serializer = self.serializer_class(user, context={'request': request})
-        return Response(serializer.data)
+        if request.user.role.role == 'patient' or request.user.role.role == 'admin':
+            user = get_object_or_404(User, id=user_id, role__role='doctor')
+            serializer = self.serializer_class(user, context={'request': request})
+            return Response(serializer.data)
+        elif request.user.role.role == 'doctor' or request.user.role.role == 'admin':
+            user = get_object_or_404(User, id=user_id, role__role='patient')
+            serializer = self.serializer_class(user, context={'request': request})
+            return Response(serializer.data)
