@@ -32,7 +32,8 @@ urlpatterns = [
     path('users/', include('users.urls')),
     path('patient/', include('patient.urls')),
     path('doctor/', include('doctor.urls')),
-    path('appointment/', include('appointment.urls'))
+    path('appointment/', include('appointment.urls')),
+    path('book/', include('medicalBook.urls'))
 ]
 
 # Добавляем статические и медиа файлы
