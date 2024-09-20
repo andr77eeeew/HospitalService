@@ -1,7 +1,6 @@
-
 from rest_framework import serializers
 from django.contrib.auth import get_user_model, authenticate
-from users.models import Role, SubRole
+
 from django.utils.translation import gettext as _
 
 User = get_user_model()
@@ -72,4 +71,3 @@ class UserUpdateProfileSerializer(serializers.ModelSerializer):
         instance.save()
 
         return instance
-

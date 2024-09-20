@@ -1,3 +1,5 @@
+from datetime import timedelta, datetime
+
 from django.core.mail import send_mail
 from django.utils.dateparse import parse_date
 from rest_framework import status
@@ -45,7 +47,7 @@ class ReturnTimeList(ListAPIView):
         if date is None:
             return Response({"error": "Invalid date format"}, status=400)
 
-        TIME_CHOICES = [t[0] for t in Appointment.TIME_CHOICES]
+        time_choices = [t[0] for t in Appointment.TIME_CHOICES]
 
         try:
             busy_times = Appointment.objects.filter(date=date, doctor=doctor).values_list('time', flat=True)
@@ -55,8 +57,10 @@ class ReturnTimeList(ListAPIView):
         busy_times_set = set(busy_times)
 
         time_status_list = [
-            {"time": t.strftime('%H:%M'), "value": t.strftime('%H:%M:%S'), "is_available": (t not in busy_times_set)}
-            for t in TIME_CHOICES
+            {
+                "time": f"{t.strftime('%H:%M')}-{(datetime.combine(date.today(), t) + timedelta(minutes=50)).strftime('%H:%M')}",
+                "value": t.strftime('%H:%M:%S'), "is_available": (t not in busy_times_set)}
+            for t in time_choices
         ]
 
         return Response(time_status_list)
@@ -135,7 +139,6 @@ class DoctorUpdateView(UpdateAPIView):
         except User.DoesNotExist:
             return Response({"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        # Получаем сериализатор для обновления существующего объекта
         serializer = self.get_serializer(user, data=request.data, partial=True)
 
         if serializer.is_valid(raise_exception=True):
