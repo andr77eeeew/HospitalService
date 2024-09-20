@@ -1,5 +1,8 @@
+"""
+URL configuration for the doctor app.
+"""
 from django.urls import path
-from doctor import views
+from . import views
 
 urlpatterns = [
     path('registration/', views.DoctorRegisterView.as_view()),
