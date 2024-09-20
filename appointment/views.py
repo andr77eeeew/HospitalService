@@ -1,5 +1,5 @@
 import rest_framework.generics as generics
-from django.core.mail import send_mail, EmailMultiAlternatives
+from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from rest_framework import status
@@ -43,9 +43,11 @@ class GetAppointmentForUserView(generics.ListAPIView):
     serializer_class = AppointmentSerializer
 
     def get_queryset(self):
-        patient = self.request.user
-        if patient.role.role == 'patient':
-            appointments = Appointment.objects.filter(patient=patient)
+        user = self.request.user
+        if user.role.role == 'patient':
+            appointments = Appointment.objects.filter(patient=user)
             return appointments
-
+        elif user.role.role == 'doctor':
+            appointments = Appointment.objects.filter(doctor=user)
+            return appointments
         return None
