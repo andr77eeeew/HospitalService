@@ -13,7 +13,7 @@ class MedicalBookSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = MedicalBook
-        fields = ('patient_name', 'patient_id', 'doctor_name', 'doctor_id', 'diagnosis', 'description',
+        fields = ('id', 'patient_name', 'patient_id', 'doctor_name', 'doctor_id', 'diagnosis', 'description',
                   'treatment', 'tests', 'created_at')
 
     def get_tests(self, obj):
