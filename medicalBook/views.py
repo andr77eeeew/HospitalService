@@ -1,10 +1,11 @@
 from datetime import date, datetime
 
 from rest_framework import status
-from rest_framework.generics import CreateAPIView, ListAPIView
+from rest_framework.generics import CreateAPIView, ListAPIView, GenericAPIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from medicalBook.models import MedicalBook
@@ -47,7 +48,7 @@ class CreateMedicalBookView(CreateAPIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class GetMedicalBookView(ListAPIView):
+class GetMedicalBooksView(ListAPIView):
     authentication_classes = [JWTAuthentication, ]
     permission_classes = (IsAuthenticated,)
     serializer_class = MedicalBookSerializer
@@ -56,4 +57,17 @@ class GetMedicalBookView(ListAPIView):
         patient = self.request.user
         if patient.role.role == 'patient':
             medicalbooks = MedicalBook.objects.filter(patient=patient)
+            return medicalbooks
+
+
+class GetMedicalBookView(ListAPIView):
+    authentication_classes = [JWTAuthentication, ]
+    permission_classes = (IsAuthenticated,)
+    serializer_class = MedicalBookSerializer
+
+    def get_queryset(self):
+        patient = self.request.user
+        id = self.request.query_params.get('id')
+        if patient.role.role == 'patient':
+            medicalbooks = MedicalBook.objects.filter(patient=patient, id=id)
             return medicalbooks
