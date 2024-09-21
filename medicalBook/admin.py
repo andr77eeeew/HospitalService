@@ -6,5 +6,5 @@ from medicalBook.models import MedicalBook
 @admin.register(MedicalBook)
 class UserAdmin(admin.ModelAdmin):
     list_display = (
-        'patient', 'doctor', 'diagnosis', 'treatment', 'description', 'tests', 'created_at')
+        'id', 'patient', 'doctor', 'diagnosis', 'treatment', 'description', 'tests', 'created_at')
     list_filter = ('patient', 'diagnosis')
