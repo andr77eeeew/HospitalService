@@ -100,11 +100,12 @@ class GetSpecificUserView(generics.RetrieveAPIView):
 
     def get(self, request, *args, **kwargs):
         user_id = request.query_params.get('user_id')
-        if request.user.role.role == 'patient' or request.user.role.role == 'admin':
+        user = request.user
+        if user.role.role == 'patient' or user.role.role == 'admin':
             user = get_object_or_404(User, id=user_id, role__role='doctor')
             serializer = self.serializer_class(user, context={'request': request})
             return Response(serializer.data)
-        elif request.user.role.role == 'doctor' or request.user.role.role == 'admin':
+        elif user.role.role == 'doctor' or user.role.role == 'admin':
             user = get_object_or_404(User, id=user_id, role__role='patient')
             serializer = self.serializer_class(user, context={'request': request})
             return Response(serializer.data)
