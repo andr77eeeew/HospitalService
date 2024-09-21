@@ -1,3 +1,5 @@
+from smtplib import SMTPDataError
+
 import rest_framework.generics as generics
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
@@ -22,17 +24,19 @@ class CreateAppointmentView(generics.CreateAPIView):
             if serializer.is_valid(raise_exception=True):
                 # Сохранение данных
                 appointment = serializer.save(patient=patient)
-                subject = f"Appointment created with {appointment.doctor.first_name} {appointment.doctor.last_name}"
-                html_message = render_to_string('appointment_email.html', {
-                    'patient_name': patient.first_name,
-                    'doctor_name': appointment.doctor.first_name,
-                    'date': appointment.date,
-                    'time': appointment.time,
-                })
-                message = strip_tags(html_message)
-                email = EmailMultiAlternatives(subject, message, to=[patient.email])
-                email.send()
-
+                try:
+                    subject = f"Appointment created with {appointment.doctor.first_name} {appointment.doctor.last_name}"
+                    html_message = render_to_string('appointment_email.html', {
+                        'patient_name': patient.first_name,
+                        'doctor_name': appointment.doctor.first_name,
+                        'date': appointment.date,
+                        'time': appointment.time,
+                    })
+                    message = strip_tags(html_message)
+                    email = EmailMultiAlternatives(subject, message, to=[patient.email])
+                    email.send()
+                except SMTPDataError as e:
+                    print(e)
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
