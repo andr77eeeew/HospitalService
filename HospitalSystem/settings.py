@@ -41,6 +41,14 @@ REST_FRAMEWORK = {
     ],
     'TIME_INPUT_FORMATS': ['%H:%M', ],
     'TIME_FORMAT': ['%H:%M', ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Hospital System API',
+    'DESCRIPTION': 'API for Hospital System',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
 }
 
 SIMPLE_JWT = {
@@ -81,9 +89,10 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
+    'drf_spectacular',
 
     'corsheaders',
-    
+
     'users',
     'patient',
     'doctor',
