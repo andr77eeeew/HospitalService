@@ -4,6 +4,7 @@ import rest_framework.generics as generics
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -18,6 +19,7 @@ class CreateAppointmentView(generics.CreateAPIView):
     permission_classes = (IsAuthenticated,)
     serializer_class = CreateAppointmentSerializer
 
+    @extend_schema(description="Create appointment")
     def perform_create(self, serializer):
         patient = self.request.user
         if patient.role.role == 'patient':
@@ -46,6 +48,7 @@ class GetAppointmentForUserView(generics.ListAPIView):
     permission_classes = (IsAuthenticated,)
     serializer_class = AppointmentSerializer
 
+    @extend_schema(description="Get appointments for user")
     def get_queryset(self):
         user = self.request.user
         if user.role.role == 'patient':

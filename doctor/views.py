@@ -2,6 +2,7 @@ from datetime import timedelta, datetime
 
 from django.core.mail import send_mail
 from django.utils.dateparse import parse_date
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.generics import ListAPIView, UpdateAPIView, CreateAPIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -15,6 +16,7 @@ from patient.models import Appointment
 
 class SpecialistList(APIView):
 
+    @extend_schema(description="Get specific specialists")
     def get(self, request, *args, **kwargs):
         if request.user.role.role != 'doctor':
             specialization = request.query_params.get('specialization')
@@ -28,6 +30,7 @@ class AllSpecialistList(ListAPIView):
     serializer_class = DoctorSerializer
     permission_classes = (AllowAny,)
 
+    @extend_schema(description="Get all specialists")
     def get(self, request, *args, **kwargs):
         queryset = User.objects.filter(role__role='doctor')
         serializer = DoctorSerializer(queryset, many=True, context={'request': request})
@@ -36,6 +39,7 @@ class AllSpecialistList(ListAPIView):
 
 class ReturnTimeList(ListAPIView):
 
+    @extend_schema(description="Checking available hours for recording")
     def get(self, request, *args, **kwargs):
         date_str = request.query_params.get('date')
         doctor = request.query_params.get('doctor')
@@ -85,6 +89,7 @@ class DoctorRegisterView(CreateAPIView):
     permission_classes = (IsAuthenticated,)
     serializer_class = DoctorRegisterSerializer
 
+    @extend_schema(description="Сreate empty account for doctor")
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
@@ -108,6 +113,7 @@ class DoctorRegisterView(CreateAPIView):
 class DoctorKeyValidatorView(APIView):
     permission_classes = (AllowAny,)
 
+    @extend_schema(description="Validate access key")
     def post(self, request, *args, **kwargs):
 
         access_key = request.data.get('access_key')
@@ -131,6 +137,7 @@ class DoctorUpdateView(UpdateAPIView):
     permission_classes = (AllowAny,)
     serializer_class = DoctorUpdateSerializer
 
+    @extend_schema(description="Update doctor account")
     def update(self, request, *args, **kwargs):
         user_id = request.data.get('id')
 

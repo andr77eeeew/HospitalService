@@ -1,4 +1,5 @@
 import rest_framework.generics as generics
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -16,6 +17,7 @@ class PatientsList(generics.ListAPIView):
     permission_classes = (JWTAuthentication,)
     authentication_classes = (IsAuthenticated,)
 
+    @extend_schema(description="Get patient list")
     def get_queryset(self):
         queryset = User.objects.filer(role__role='patient').related_name('role')
         return queryset
@@ -26,6 +28,7 @@ class PatientRegisterView(generics.CreateAPIView):
     permission_classes = (AllowAny,)
     serializer_class = PatientRegisterSerializer
 
+    @extend_schema(description="Create patient")
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):

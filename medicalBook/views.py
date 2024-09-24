@@ -1,11 +1,11 @@
 from datetime import date, datetime
 
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.generics import CreateAPIView, ListAPIView, GenericAPIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from medicalBook.models import MedicalBook
@@ -19,6 +19,7 @@ class CreateMedicalBookView(CreateAPIView):
     parser_classes = [MultiPartParser, FormParser]
     serializer_class = CreateMedicalBookSerializer
 
+    @extend_schema(description="Check if doctor can create medical book")
     def get(self, request, *args, **kwargs):
         doctor_id = self.request.user
         patient_id = request.query_params.get('patient_id')
@@ -38,6 +39,7 @@ class CreateMedicalBookView(CreateAPIView):
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
 
+    @extend_schema(description="Create medical book")
     def perform_create(self, serializer):
         doctor = self.request.user
         if doctor.role.role == 'doctor':
@@ -53,6 +55,7 @@ class GetMedicalBooksView(ListAPIView):
     permission_classes = (IsAuthenticated,)
     serializer_class = MedicalBookSerializer
 
+    @extend_schema(description="Get medical books")
     def get_queryset(self):
         patient = self.request.user
         if patient.role.role == 'patient':
@@ -65,6 +68,7 @@ class GetMedicalBookView(ListAPIView):
     permission_classes = (IsAuthenticated,)
     serializer_class = MedicalBookSerializer
 
+    @extend_schema(description="Get medical book")
     def get_queryset(self):
         patient = self.request.user
         id = self.request.query_params.get('id')
