@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from patient.models import Appointment
-from .models import User, Role, SubRole
+from .models import User, Role, SubRole, ResetPassword
 
 
 @admin.register(User)
@@ -25,3 +25,8 @@ class SubRoleAdmin(admin.ModelAdmin):
 class AppointmentAdmin(admin.ModelAdmin):
     list_display = ('id', 'patient', 'doctor', 'date', 'time', 'message', 'created_at')
     list_filter = ('doctor', 'patient', 'date')
+
+
+@admin.register(ResetPassword)
+class ResetPasswordAdmin(admin.ModelAdmin):
+    list_display = ('email', 'token', 'created_at')
