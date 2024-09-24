@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 from django.shortcuts import get_object_or_404
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -14,6 +15,7 @@ from users.serializers import LoginSerializer, UserSerializer, UserUpdateProfile
 class GetSubRolesView(APIView):
     permission_classes = (AllowAny,)
 
+    @extend_schema(description="Getting the specialization that is currently in the hospital")
     def get(self, *args, **kwargs):
         doctor_role = 'doctor'
 
@@ -30,6 +32,7 @@ class LoginView(generics.GenericAPIView):
     serializer_class = LoginSerializer
     permission_classes = (AllowAny,)
 
+    @extend_schema(description="Login user")
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
@@ -49,6 +52,7 @@ class LogoutView(APIView):
     authentication_classes = [JWTAuthentication, ]
     permission_classes = [IsAuthenticated, ]
 
+    @extend_schema(description="Logout user")
     def post(self, request):
         access_token = request.headers.get('Authorization')
         if not access_token:
@@ -70,6 +74,7 @@ class UserDetailView(generics.RetrieveAPIView):
     authentication_classes = [JWTAuthentication, ]
     permission_classes = [IsAuthenticated, ]
 
+    @extend_schema(description="Get user details")
     def get(self, request, **kwargs):
         serializer = UserSerializer(request.user, context={'request': request})
         return Response(serializer.data)
@@ -81,6 +86,7 @@ class UserUpdateView(generics.UpdateAPIView):
     serializer_class = UserUpdateProfileSerializer
     parser_classes = [MultiPartParser, FormParser]
 
+    @extend_schema(description="Update user details")
     def get_user(self):
         return self.request.user
 
@@ -98,6 +104,7 @@ class GetSpecificUserView(generics.RetrieveAPIView):
     lookup_field = 'user_id'
     lookup_url_kwarg = 'user_id'
 
+    @extend_schema(description="Getting user by ID")
     def get(self, request, *args, **kwargs):
         user_id = request.query_params.get('user_id')
         user = request.user
