@@ -38,7 +38,7 @@ class CreateAppointmentView(generics.CreateAPIView):
                     email = EmailMultiAlternatives(subject, message, to=[patient.email])
                     email.send()
                 except SMTPDataError as e:
-                    print(e)
+                    return Response({"detail": e}, status=status.HTTP_400_BAD_REQUEST)
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

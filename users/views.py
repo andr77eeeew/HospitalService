@@ -1,3 +1,8 @@
+from smtplib import SMTPDataError
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 from django.shortcuts import get_object_or_404
@@ -7,9 +12,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
+from users.models import User, SubRole, ResetPassword
+from users.serializers import LoginSerializer, UserSerializer, UserUpdateProfileSerializer, \
+    ResetPasswordRequestSerializer, PasswordResetSerializer
+from environs import Env
 
-from users.models import User, SubRole
-from users.serializers import LoginSerializer, UserSerializer, UserUpdateProfileSerializer
+env = Env()
+env.read_env()
 
 
 class GetSubRolesView(APIView):
@@ -116,3 +125,66 @@ class GetSpecificUserView(generics.RetrieveAPIView):
             user = get_object_or_404(User, id=user_id, role__role='patient')
             serializer = self.serializer_class(user, context={'request': request})
             return Response(serializer.data)
+
+
+class RequestPasswordReset(generics.GenericAPIView):
+    permission_classes = (AllowAny,)
+    serializer_class = ResetPasswordRequestSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        email = request.data['email']
+        user = User.objects.filter(email__iexact=email).first()
+
+        if user:
+            token_generator = PasswordResetTokenGenerator()
+            token = token_generator.make_token(user)
+            reset = ResetPassword(email=email, token=token)
+            reset.save()
+            reset_link = f"{env.str('RESET_PASSWORD_URL')}/{token}"
+            try:
+                subject = f"Reset Password"
+                html_message = render_to_string('reset_password.html', {
+                    'reset_link': reset_link
+                })
+                message = strip_tags(html_message)
+                email = EmailMultiAlternatives(
+                    subject=subject,
+                    body=message,
+                    to=[email])
+                email.attach_alternative(html_message, 'text/html')
+                email.send()
+            except SMTPDataError as e:
+                print(e)
+            return Response({"message": "Password reset link sent to your email."}, status=status.HTTP_200_OK)
+
+        return Response({"message": "User with this email does not exist."}, status=status.HTTP_404_NOT_FOUND)
+
+
+class ResetPasswordView(generics.GenericAPIView):
+    permission_classes = (AllowAny,)
+    serializer_class = PasswordResetSerializer
+
+    def post(self, request, token):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        new_password = data['new_password']
+
+        reset_obj = ResetPassword.objects.filter(token=token).first()
+
+        if not reset_obj:
+            return Response({"detail": "Invalid token."}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = User.objects.filter(email=reset_obj.email).first()
+
+        if user:
+            user.set_password(new_password)
+            user.save()
+
+            reset_obj.delete()
+
+            return Response({"message": "Password reset successfully."}, status=status.HTTP_200_OK)
+
+        return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)

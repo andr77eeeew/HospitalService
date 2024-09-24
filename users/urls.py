@@ -9,4 +9,6 @@ urlpatterns = [
     path('update/', views.UserUpdateView.as_view(), name='update'),
     path('specific/', views.GetSpecificUserView.as_view(), name='specific'),
     path('subroles/', views.GetSubRolesView.as_view(), name='users-subroles'),
+    path('request-reset/', views.RequestPasswordReset.as_view(), name='request-reset'),
+    path('reset-password/<token>/', views.ResetPasswordView.as_view(), name='reset-password'),
 ]
