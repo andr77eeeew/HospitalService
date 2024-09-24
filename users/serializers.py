@@ -71,3 +71,19 @@ class UserUpdateProfileSerializer(serializers.ModelSerializer):
         instance.save()
 
         return instance
+
+
+class ResetPasswordRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+
+
+class PasswordResetSerializer(serializers.Serializer):
+    new_password = serializers.RegexField(
+        required=True,
+        write_only=True,
+        regex="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$",
+        error_messages={
+            "invalid": (
+                "Password must be at least 6 characters long, contain at least one uppercase letter, one lowercase letter, one digit, and one special character."),
+        },
+    )
