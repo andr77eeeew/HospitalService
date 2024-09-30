@@ -98,6 +98,7 @@ INSTALLED_APPS = [
     'doctor',
     'appointment',
     'medicalBook',
+    'chat',
 ]
 
 MIDDLEWARE = [
@@ -248,3 +249,14 @@ ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_UNIQUE_EMAIL = True
+
+REDIS_URL = env.str('REDIS_URL')
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [REDIS_URL],
+        },
+    },
+}
