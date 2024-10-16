@@ -7,11 +7,12 @@ from chat.models import ChatRoom, ChatHistory
 
 @admin.register(ChatRoom)
 class ChatRoomAdmin(admin.ModelAdmin):
-    list_display = ('name', 'doctor', 'patient', 'created_at')
+    list_display = ('name', 'doctor', 'patient', 'created_at', 'active_users')
     list_filter = ('doctor', 'patient')
 
 
 @admin.register(ChatHistory)
 class ChatHistoryAdmin(admin.ModelAdmin):
-    list_display = ('room', 'sender', 'message', 'media', 'timestamp', 'is_edited', 'is_deleted', 'replied_to')
+    list_display = (
+        'room', 'sender', 'message', 'media', 'timestamp', 'is_edited', 'is_deleted', 'replied_to', 'read_status')
     list_filter = ('sender',)
