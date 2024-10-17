@@ -2,14 +2,12 @@ import base64
 import binascii
 import json
 import logging
-import asyncio
-from urllib.parse import urljoin
+from chat.utils import build_media_absolute_uri
 from asgiref.sync import sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.core.files.base import ContentFile
 from django.db.models import F
 
-from HospitalSystem import settings
 from chat.models import ChatRoom, ChatHistory
 
 logger = logging.getLogger('chat')
@@ -98,7 +96,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'id': message.id,
             'sender': message.sender.id,
             'content': message.message if message.message else None,
-            'media': self.build_media_absolute_uri(message.media.url) if message.media else None,
+            'media': build_media_absolute_uri(message.media.url) if message.media else None,
             'timestamp': message.timestamp.isoformat(),
             'replied_to': message.replied_to.message if message.replied_to else None,
             'is_edited': message.is_edited,
@@ -114,9 +112,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'room_name': room.name,
             'sender_id': sender.id,
             'sender_name': f"{sender.first_name} {sender.last_name}",
-            'sender_avatar': self.build_media_absolute_uri(sender.avatar.url) if sender.avatar else None,
+            'sender_avatar': build_media_absolute_uri(sender.avatar.url) if sender.avatar else None,
             'content': message.message if message.message else None,
-            'media': self.build_media_absolute_uri(message.media.url) if message.media else None,
+            'media': build_media_absolute_uri(message.media.url) if message.media else None,
             'timestamp': message.timestamp.isoformat(),
         }
 
@@ -327,7 +325,3 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         except Exception as e:
             logger.error(f"Ошибка при отправке уведомления пользователю: {e}")
-
-    def build_media_absolute_uri(self, media_url):
-        base_url = f"http://{settings.ALLOWED_HOSTS[0]}:8000" if settings.ALLOWED_HOSTS else "http://localhost:8000"
-        return urljoin(base_url, media_url)
