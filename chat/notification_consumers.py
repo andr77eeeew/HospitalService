@@ -31,6 +31,7 @@ class NotificationConsumer(AsyncWebsocketConsumer):
                     self.notification_room_name,
                     self.channel_name
                 )
+
                 logger.info(f"Пользователь {self.user_id} добавлен в группу {self.notification_room_name}")
                 await self.accept()
 
@@ -63,20 +64,20 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             'timestamp': message.timestamp.isoformat(),
         }
 
-    @database_sync_to_async
-    def get_unread_messages(self):
-        user_rooms = ChatRoom.objects.filter(
-            Q(doctor=self.user) | Q(patient=self.user)
-        )
-        unread_messages = ChatHistory.objects.filter(
-            room__in=user_rooms,
-            read_status=False
+    async def get_unread_messages(self):
+        unread_messages = []
+        async for messages in ChatHistory.objects.filter(
+                room__in=ChatRoom.objects.filter(
+                    Q(doctor=self.user) | Q(patient=self.user)
+                ),
+                read_status=False
         ).exclude(
             sender=self.user
-        )
-        return unread_messages if unread_messages else []
+        ).select_related('room').all():
+            unread_messages.append(messages)
+        return list(unread_messages) if unread_messages else None
 
-    async def send_notifications(self, event=None):
+    async def send_notifications(self):
         try:
             unread_messages = await self.get_unread_messages()
             if unread_messages:
