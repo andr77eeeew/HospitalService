@@ -1,12 +1,11 @@
 import json
 import logging
 
-from asgiref.sync import sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.db.models import Q
 
 from chat.models import ChatHistory, ChatRoom
-from chat.utils import build_media_absolute_uri
+from chat.utils import format_notification
 
 logger = logging.getLogger('notification')
 
@@ -49,19 +48,6 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         except Exception as e:
             logger.error(f"Ошибка при отключении пользователя {self.user_id}: {e}")
 
-    def format_notification(self, message):
-        sender = message.sender
-        room = message.room
-        return {
-            'room_name': room.name,
-            'sender_id': sender.id,
-            'sender_name': f"{sender.first_name} {sender.last_name}",
-            'sender_avatar': build_media_absolute_uri(sender.avatar.url) if sender.avatar else None,
-            'content': message.message if message.message else None,
-            'media': build_media_absolute_uri(message.media.url) if message.media else None,
-            'timestamp': message.timestamp.isoformat(),
-        }
-
     async def get_unread_messages(self):
         unread_messages = []
         async for messages in ChatHistory.objects.filter(
@@ -82,7 +68,7 @@ class NotificationConsumer(AsyncWebsocketConsumer):
                 for message in unread_messages:
                     await self.send(text_data=json.dumps({
                         'type': 'notification',
-                        'notification': await sync_to_async(self.format_notification)(message)
+                        'notification': await format_notification(message)
                     }))
             else:
                 logger.info(f"Нет непрочитанных сообщений для пользователя {self.user_id}")

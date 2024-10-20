@@ -2,13 +2,13 @@ import base64
 import binascii
 import json
 import logging
-from chat.utils import build_media_absolute_uri
 from asgiref.sync import sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.core.files.base import ContentFile
 from django.db.models import F
 
 from chat.models import ChatRoom, ChatHistory
+from chat.utils import format_message, format_notification
 
 logger = logging.getLogger('chat')
 
@@ -24,6 +24,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             f"User {self.user.first_name} {self.user.last_name} is connected to room {self.room_name} active users {self.room.active_users}")
 
         if self.user.is_anonymous:
+            logger.warning("Анонимный пользователь попытался подключиться")
             await self.close()
         else:
             active_users = await self.update_active_users(increment=True)
@@ -60,7 +61,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
             await self.room.asave()
 
-            updated_room = ChatRoom.objects.aget(name=self.room_name)
+            updated_room = await ChatRoom.objects.aget(name=self.room_name)
             logger.info(f'Active users in room "{self.room_name}": {updated_room.active_users}')
 
             return updated_room.active_users
@@ -72,7 +73,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
         async for message in ChatHistory.objects.filter(
                 room=self.room,
                 read_status=False,
-        ).select_related('sender'):
+        ).select_related('sender', 'room', 'replied_to'):
+            logger.info(f"Помечаем сообщение {message.id} как прочитанное")
 
             if message.sender != self.user:
                 message.read_status = True
@@ -83,40 +85,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
             history = []
             async for messages in (ChatHistory.objects.filter(room=self.room)
                     .order_by('timestamp')
-                    .select_related('sender', 'room')):
-                formatted_message = await self.format_message(messages)
+                    .select_related('sender', 'room', 'replied_to')):
+                formatted_message = await format_message(messages)
+                logger.info(f"Форматированное сообщение: {formatted_message}")
                 history.append(formatted_message)
             await self.send(text_data=json.dumps({'type': 'chat_history', 'messages': history}))
         except Exception as e:
             logger.error(f"Error while sending history: {str(e)}")
-
-    @sync_to_async()
-    def format_message(self, message):
-        return {
-            'id': message.id,
-            'sender': message.sender.id,
-            'content': message.message if message.message else None,
-            'media': build_media_absolute_uri(message.media.url) if message.media else None,
-            'timestamp': message.timestamp.isoformat(),
-            'replied_to': message.replied_to.message if message.replied_to else None,
-            'is_edited': message.is_edited,
-            'is_deleted': message.is_deleted,
-            'is_read': message.read_status,
-        }
-
-    @sync_to_async
-    def format_notification(self, message):
-        sender = message.sender
-        room = message.room
-        return {
-            'room_name': room.name,
-            'sender_id': sender.id,
-            'sender_name': f"{sender.first_name} {sender.last_name}",
-            'sender_avatar': build_media_absolute_uri(sender.avatar.url) if sender.avatar else None,
-            'content': message.message if message.message else None,
-            'media': build_media_absolute_uri(message.media.url) if message.media else None,
-            'timestamp': message.timestamp.isoformat(),
-        }
 
     async def create_notification(self, new_message):
         try:
@@ -129,7 +104,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     lambda: self.room.patient if self.scope['user'] == self.room.doctor else self.room.doctor)()
                 logger.info(f"Отправляем уведомление пользователю {other_user.id}")
 
-                notification_data = await self.format_notification(new_message)
+                notification_data = await format_notification(new_message)
                 logger.info(f"Данные для уведомления: {notification_data}")
 
                 await self.channel_layer.group_send(
@@ -153,7 +128,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             new_message.read_status = True
             await sync_to_async(new_message.save)()
 
-        formatted_message = await self.format_message(new_message)
+        formatted_message = await format_message(new_message)
 
         await self.channel_layer.group_send(
             self.room_group_name,
@@ -234,7 +209,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 logger.info(f"Сообщение {replied_to_id} было найдено и привязано как ответ для медиа-сообщения")
 
             try:
-                media_file = ContentFile(base64.b64decode(media_data), name=f"media_{sender.id}.jpg")
+                media_file = ContentFile(base64.b64decode(media_data), name=f"{file_name}")
                 logger.info(f"Медиа-файл успешно создан для пользователя {sender.id}")
             except binascii.Error as e:
                 error_message = f"Ошибка декодирования Base64 данных: {str(e)}"
@@ -245,6 +220,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 room=self.room,
                 sender=sender,
                 media=media_file,
+                file_type=file_type,
                 message='',
                 replied_to=replied_to_message
             )
@@ -263,7 +239,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message.is_edited = True
         await message.asave()
 
-        formatted_message = await self.format_message(message)
+        formatted_message = await format_message(message)
 
         await self.channel_layer.group_send(
             self.room_group_name,
@@ -280,7 +256,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message.is_deleted = True
         await message.asave()
 
-        formatted_message = await self.format_message(message)
+        formatted_message = await format_message(message)
 
         await self.channel_layer.group_send(
             self.room_group_name,
