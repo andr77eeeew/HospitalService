@@ -3,8 +3,6 @@ from django.db import models
 from users.models import User
 
 
-# Create your models here.
-
 class ChatRoom(models.Model):
     name = models.CharField(max_length=255)
     doctor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chat_doctor')
@@ -20,6 +18,7 @@ class ChatHistory(models.Model):
     room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name='messages')
     message = models.TextField(null=True, blank=True)
     media = models.FileField(upload_to='chat_media', blank=True, null=True)
+    file_type = models.CharField(max_length=50, blank=True, null=True)
     sender = models.ForeignKey(User, on_delete=models.CASCADE)
     timestamp = models.DateTimeField(auto_now_add=True)
     is_edited = models.BooleanField(default=False)
