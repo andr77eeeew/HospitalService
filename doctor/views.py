@@ -1,4 +1,4 @@
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, time
 
 from django.core.mail import send_mail
 from django.utils.dateparse import parse_date
@@ -43,6 +43,8 @@ class ReturnTimeList(ListAPIView):
     def get(self, request, *args, **kwargs):
         date_str = request.query_params.get('date')
         doctor = request.query_params.get('doctor')
+        current_time = datetime.now().time()
+        today = datetime.now().date()
 
         if date_str is None or doctor is None:
             return Response({"error": "Date or doctor parameter is missing"}, status=400)
@@ -54,18 +56,34 @@ class ReturnTimeList(ListAPIView):
         time_choices = [t[0] for t in Appointment.TIME_CHOICES]
 
         try:
-            busy_times = Appointment.objects.filter(date=date, doctor=doctor).values_list('time', flat=True)
+            busy_times = set(Appointment.objects.filter(date=date, doctor=doctor).values_list('time', flat=True))
         except Exception as e:
             return Response({"error": "Error fetching data from the database"}, status=500)
 
-        busy_times_set = set(busy_times)
-
-        time_status_list = [
-            {
-                "time": f"{t.strftime('%H:%M')}-{(datetime.combine(date.today(), t) + timedelta(minutes=50)).strftime('%H:%M')}",
-                "value": t.strftime('%H:%M:%S'), "is_available": (t not in busy_times_set)}
-            for t in time_choices
-        ]
+        if date == today:
+            time_status_list = [
+                {
+                    "time": f"{t.strftime('%H:%M')}-{(datetime.combine(date.today(), t) + timedelta(minutes=50)).strftime('%H:%M')}",
+                    "value": t.strftime('%H:%M:%S'),
+                    "is_available": (t not in busy_times and t >= current_time)
+                }
+                for t in time_choices
+                if
+                t >= current_time and (datetime.combine(date.today(), t) + timedelta(minutes=50)) <= datetime.combine(
+                    date.today(), time(23, 59))
+            ]
+        else:
+            # Если дата не сегодня, не сравниваем с current_time
+            time_status_list = [
+                {
+                    "time": f"{t.strftime('%H:%M')}-{(datetime.combine(date.today(), t) + timedelta(minutes=50)).strftime('%H:%M')}",
+                    "value": t.strftime('%H:%M:%S'),
+                    "is_available": (t not in busy_times)
+                }
+                for t in time_choices
+                if (datetime.combine(date.today(), t) + timedelta(minutes=50)) <= datetime.combine(
+                    date.today(), time(23, 59))
+            ]
 
         return Response(time_status_list)
 
