@@ -69,7 +69,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             logger.error(f"Error while updating active users: {str(e)}")
 
     async def mark_unread_messages_as_read(self):
-
+        active_users = await ChatRoom.objects.aget(name=self.room_name)
         async for message in ChatHistory.objects.filter(
                 room=self.room,
                 read_status=False,
@@ -79,6 +79,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
             if message.sender != self.user:
                 message.read_status = True
                 await message.asave()
+                if active_users.active_users == 2:
+                    await self.channel_layer.group_send(
+                        self.room_group_name,
+                        {
+                            'type': 'update_status',
+                            'id': message.id,
+                            "read_status:": True,
+                        }
+                    )
 
     async def send_history(self):
         try:
@@ -288,6 +297,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({
             'type': 'edit_message',
             'messages': message
+        }))
+
+    async def update_status(self, event):
+        id = event['id']
+        read_status = event['read_status:']
+
+        await self.send(text_data=json.dumps({
+            'type': 'update_status',
+            'id': id,
+            "read_status:": read_status
         }))
 
     async def send_notification(self, event):
