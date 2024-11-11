@@ -135,7 +135,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         if active_users.active_users == 2:
             new_message.read_status = True
-            await sync_to_async(new_message.save)()
+            await new_message.asave()
 
         formatted_message = await format_message(new_message)
 
