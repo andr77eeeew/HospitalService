@@ -9,6 +9,7 @@ class ChatRoom(models.Model):
     patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chat_patient')
     created_at = models.DateTimeField(auto_now_add=True)
     active_users = models.PositiveIntegerField(default=0)
+    active_voice_users = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return f'Room between {self.doctor} and {self.patient}'
