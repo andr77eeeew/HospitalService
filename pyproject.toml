@@ -23,6 +23,8 @@ django-allauth = "64.2.1"
 drf-spectacular = "0.27.2"
 Pillow = "10.4.0"
 requests = "2.32.3"
+whitenoise = "6.8.2"
+boto3 = "1.35.64"
 
 [build-system]
 requires = ["poetry-core"]
