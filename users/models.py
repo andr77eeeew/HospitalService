@@ -78,7 +78,7 @@ class User(AbstractUser):
     username = None
     first_name = models.CharField(_("first name"), max_length=150, blank=True, null=True)
     last_name = models.CharField(_("last name"), max_length=150, blank=True, null=True)
-    avatar = models.ImageField(upload_to='users_avatars', blank=True, null=True)
+    avatar = models.ImageField(upload_to='users_avatars/', blank=True, null=True, )
     email = models.EmailField(unique=True, null=True, blank=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
     access_key = models.CharField(max_length=20, blank=True, null=True, unique=True)

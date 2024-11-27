@@ -12,5 +12,5 @@ class MedicalBook(models.Model):
     diagnosis = models.TextField(null=True, blank=True)
     description = models.TextField(null=True, blank=True)
     treatment = models.TextField(null=True, blank=True)
-    tests = models.FileField(upload_to='medical_tests', blank=True, null=True)
+    tests = models.FileField(upload_to='medical_tests/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
