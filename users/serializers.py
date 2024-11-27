@@ -1,54 +1,29 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model, authenticate
-from users.models import Role, SubRole
+
 from django.utils.translation import gettext as _
 
 User = get_user_model()
 
 
 class UserSerializer(serializers.ModelSerializer):
+    roles = serializers.StringRelatedField()
+    sub_role = serializers.StringRelatedField()
+    avatar = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ('id', 'avatar', 'first_name', 'last_name', 'email', 'phone', 'gender', 'date_birth', 'role',
-                  "sub_role")
+        fields = ('id', 'avatar', 'first_name', 'last_name', 'email', 'phone', 'gender', 'date_birth', 'roles',
+                  "sub_role", "is_blocked")
+
+    def get_avatar(self, obj):
+        request = self.context.get('request')
+        if obj.avatar:
+            return request.build_absolute_uri(obj.avatar.url)
+        return None
 
 
-class PatientRegisterSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ('first_name', 'last_name', 'email', 'phone', 'role', 'gender', 'date_birth', 'password')
-        extra_kwargs = {
-            'password': {'write_only': True},
-            'style': {'input_type': 'password'}
-        }
-
-    def create(self, validated_data):
-        # Попробуем получить роль пациента, обработаем исключение, если роль не найдена
-        try:
-            patient_role = Role.objects.get(role='patient')
-        except Role.DoesNotExist:
-            raise serializers.ValidationError({"role": "Role 'patient' does not exist."})
-
-        # Извлекаем и проверяем пароль
-        password = validated_data.pop('password', None)
-        if not password:
-            raise serializers.ValidationError({"password": "Password is required."})
-
-        # Создаем пользователя через менеджер, чтобы пароль хешировался
-        user = User.objects.create_user(
-            first_name=validated_data.get('first_name'),
-            last_name=validated_data.get('last_name'),
-            email=validated_data.get('email'),
-            phone=validated_data.get('phone'),
-            role=patient_role,
-            gender=validated_data.get('gender'),
-            date_birth=validated_data.get('date_birth'),
-            password=password,  # передаем пароль
-        )
-        return user
-
-
-class PatientLoginSerializer(serializers.Serializer):
+class LoginSerializer(serializers.Serializer):
     email = serializers.CharField()
     password = serializers.CharField()
 
@@ -71,4 +46,44 @@ class PatientLoginSerializer(serializers.Serializer):
         return data
 
 
+class UserUpdateProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('avatar', 'first_name', 'last_name', 'email', 'phone', 'password')
+        extra_kwargs = {
+            'password': {'write_only': True},
+        }
 
+    def update(self, instance, validated_data):
+        # Извлекаем пароль, если он есть
+        password = validated_data.pop('password', None)
+        if password:
+            instance.set_password(password)
+
+        # Обновляем остальные поля напрямую
+        instance.avatar = validated_data.get('avatar', instance.avatar)
+        instance.first_name = validated_data.get('first_name', instance.first_name)
+        instance.last_name = validated_data.get('last_name', instance.last_name)
+        instance.email = validated_data.get('email', instance.email)
+        instance.phone = validated_data.get('phone', instance.phone)
+
+        # Сохраняем изменения
+        instance.save()
+
+        return instance
+
+
+class ResetPasswordRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+
+
+class PasswordResetSerializer(serializers.Serializer):
+    new_password = serializers.RegexField(
+        required=True,
+        write_only=True,
+        regex="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$",
+        error_messages={
+            "invalid": (
+                "Password must be at least 6 characters long, contain at least one uppercase letter, one lowercase letter, one digit, and one special character."),
+        },
+    )
