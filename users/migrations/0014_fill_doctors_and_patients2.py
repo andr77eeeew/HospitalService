@@ -3,11 +3,11 @@ from datetime import date
 import random
 from io import BytesIO
 
-
 from django.contrib.auth.hashers import make_password
 from requests import get
 from django.core.files import File
 from django.db import migrations
+
 
 def assign_avatar_from_dicebear(user):
     url = f"https://xsgames.co/randomusers/avatar.php?g={user.gender}"  # URL для генерации случайного аватара
@@ -15,6 +15,8 @@ def assign_avatar_from_dicebear(user):
     if response.status_code == 200:
         avatar_file = BytesIO(response.content)
         user.avatar.save(f"{user.email}_avatar.jpg", File(avatar_file), save=True)
+
+
 def create_doctors_and_patients(apps, schema_editor):
     User = apps.get_model('users', 'User')
     Role = apps.get_model('users', 'Role')
@@ -91,8 +93,8 @@ def create_doctors_and_patients(apps, schema_editor):
         )
         assign_avatar_from_dicebear(user)
 
-class Migration(migrations.Migration):
 
+class Migration(migrations.Migration):
     dependencies = [
         ('users', '0010_alter_user_email'),
     ]
