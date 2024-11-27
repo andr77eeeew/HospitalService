@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: hospital-system
+    env: docker
+    plan: free
+    buildCommand: ./build.sh
+    startCommand: >
+      bash -c "until python manage.py migrate; do echo 'Waiting for DB...'; sleep 2; done && 
+      python manage.py collectstatic --noinput && 
+      gunicorn HospitalSystem.asgi:application -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --workers 4 --threads 4 --access-logfile - --log-level info"
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: "HospitalSystem.settings"
+      - key: SECRET_KEY
+        sync: true
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: "your-render-url.com"
+      - key: DATABASE_URL
+        sync: true
+    healthCheckPath: /
+    autoDeploy: true
