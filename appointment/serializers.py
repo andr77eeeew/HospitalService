@@ -27,7 +27,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
 
 
 class CreateAppointmentSerializer(serializers.ModelSerializer):
-    doctor = serializers.PrimaryKeyRelatedField(queryset=User.objects.filter(role__role='doctor'))
+    doctor = serializers.PrimaryKeyRelatedField(queryset=User.objects.filter(roles__role='doctor'))
 
     class Meta:
         model = Appointment
@@ -42,7 +42,7 @@ class CreateAppointmentSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         patient = request.user if request else None
 
-        if not patient or patient.role.role != 'patient':
+        if not patient or patient.roles.role != 'patient':
             raise serializers.ValidationError("You are not a patient")
 
         date_str = validated_data.get('date')

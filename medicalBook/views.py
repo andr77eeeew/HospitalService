@@ -42,7 +42,7 @@ class CreateMedicalBookView(CreateAPIView):
     @extend_schema(description="Create medical book")
     def perform_create(self, serializer):
         doctor = self.request.user
-        if doctor.role.role == 'doctor':
+        if doctor.roles.role == 'doctor':
             if serializer.is_valid(raise_exception=True):
                 # Сохранение данных
                 medicalbook = serializer.save(doctor=doctor)
@@ -58,7 +58,7 @@ class GetMedicalBooksView(ListAPIView):
     @extend_schema(description="Get medical books")
     def get_queryset(self):
         patient = self.request.user
-        if patient.role.role == 'patient':
+        if patient.roles.role == 'patient':
             medicalbooks = MedicalBook.objects.filter(patient=patient)
             return medicalbooks
 
@@ -72,6 +72,6 @@ class GetMedicalBookView(ListAPIView):
     def get_queryset(self):
         patient = self.request.user
         id = self.request.query_params.get('id')
-        if patient.role.role == 'patient':
+        if patient.roles.role == 'patient':
             medicalbooks = MedicalBook.objects.filter(patient=patient, id=id)
             return medicalbooks

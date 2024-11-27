@@ -19,12 +19,12 @@ class PatientsList(generics.ListAPIView):
 
     @extend_schema(description="Get patient list")
     def get_queryset(self):
-        queryset = User.objects.filer(role__role='patient').related_name('role')
+        queryset = User.objects.filer(roles__role='patient').related_name('role')
         return queryset
 
 
 class PatientRegisterView(generics.CreateAPIView):
-    queryset = User.objects.filter(role__role='patient')
+    queryset = User.objects.filter(roles__role='patient')
     permission_classes = (AllowAny,)
     serializer_class = PatientRegisterSerializer
 

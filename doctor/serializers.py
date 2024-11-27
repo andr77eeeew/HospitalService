@@ -5,15 +5,15 @@ import secrets
 import string
 
 
-
 class DoctorSerializer(serializers.ModelSerializer):
-    role = serializers.StringRelatedField()
+    roles = serializers.StringRelatedField()
     sub_role = serializers.StringRelatedField()
     avatar = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ('id', 'avatar', 'first_name', 'last_name', 'email', 'phone', 'gender', 'date_birth', 'role', 'sub_role')
+        fields = (
+            'id', 'avatar', 'first_name', 'last_name', 'email', 'phone', 'gender', 'date_birth', 'roles', 'sub_role')
 
     def get_avatar(self, obj):
         request = self.context.get('request')
@@ -25,7 +25,7 @@ class DoctorSerializer(serializers.ModelSerializer):
 class DoctorRegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('access_key', 'role')
+        fields = ('access_key', 'roles')
         extra_kwargs = {
             'access_key': {'read_only': True}
         }

@@ -7,8 +7,8 @@ from .models import User, Role, SubRole, ResetPassword
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
     list_display = (
-        'id', 'first_name', 'last_name', 'email', 'phone', 'gender', 'date_birth', 'role', 'sub_role', 'password',)
-    list_filter = ('role', 'gender')
+        'id', 'first_name', 'last_name', 'email', 'phone', 'gender', 'date_birth', 'roles', 'sub_role', 'password',)
+    list_filter = ('roles', 'gender')
 
 
 @admin.register(Role)

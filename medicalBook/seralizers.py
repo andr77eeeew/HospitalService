@@ -36,7 +36,7 @@ class MedicalBookSerializer(serializers.ModelSerializer):
 
 
 class CreateMedicalBookSerializer(serializers.ModelSerializer):
-    patient = serializers.PrimaryKeyRelatedField(queryset=User.objects.filter(role__role='patient'))
+    patient = serializers.PrimaryKeyRelatedField(queryset=User.objects.filter(roles__role='patient'))
 
     class Meta:
         model = MedicalBook
@@ -52,7 +52,7 @@ class CreateMedicalBookSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         doctor = request.user if request else None
 
-        if not doctor or doctor.role.role != 'doctor':
+        if not doctor or doctor.roles.role != 'doctor':
             raise serializers.ValidationError("You are not a doctor")
 
         diagnosis = validated_data.get('diagnosis')

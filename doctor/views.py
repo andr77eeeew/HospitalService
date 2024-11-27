@@ -18,21 +18,20 @@ class SpecialistList(APIView):
 
     @extend_schema(description="Get specific specialists")
     def get(self, request, *args, **kwargs):
-        if request.user.role.role != 'doctor':
+        if request.user.roles.role != 'doctor':
             specialization = request.query_params.get('specialization')
-            queryset = User.objects.filter(role__role='doctor', sub_role__sub_role=specialization)
+            queryset = User.objects.filter(roles__role='doctor', sub_role__sub_role=specialization)
             serializer = DoctorSerializer(queryset, many=True, context={'request': request})
             return Response(serializer.data)
 
 
 class AllSpecialistList(ListAPIView):
-    queryset = User.objects.filter(role__role='doctor')
     serializer_class = DoctorSerializer
     permission_classes = (AllowAny,)
 
     @extend_schema(description="Get all specialists")
     def get(self, request, *args, **kwargs):
-        queryset = User.objects.filter(role__role='doctor')
+        queryset = User.objects.filter(roles__role='doctor')
         serializer = DoctorSerializer(queryset, many=True, context={'request': request})
         return Response(serializer.data)
 
@@ -103,7 +102,7 @@ class ReturnTimeList(ListAPIView):
 
 
 class DoctorRegisterView(CreateAPIView):
-    queryset = User.objects.filter(role__role='doctor')
+    queryset = User.objects.filter(roles__role='doctor')
     permission_classes = (IsAuthenticated,)
     serializer_class = DoctorRegisterSerializer
 
@@ -113,7 +112,7 @@ class DoctorRegisterView(CreateAPIView):
         if serializer.is_valid(raise_exception=True):
             doctor = serializer.save()
             send_mail(
-                f"Hello, {doctor.role.role}!",
+                f"Hello, {doctor.roles.role}!",
                 "This is your access key for your doctor account: " + doctor.access_key,
                 from_email=None,
                 recipient_list=[doctor.email],
@@ -121,7 +120,7 @@ class DoctorRegisterView(CreateAPIView):
             )
             return Response({
                 "id": doctor.id,
-                "role": doctor.role.role,
+                "role": doctor.roles.role,
                 "access_key": doctor.access_key,
                 "detail": "Doctor account created successfully"
             }, status=status.HTTP_201_CREATED)
@@ -151,7 +150,7 @@ class DoctorKeyValidatorView(APIView):
 
 
 class DoctorUpdateView(UpdateAPIView):
-    queryset = User.objects.filter(role__role='doctor')
+    queryset = User.objects.filter(roles__role='doctor')
     permission_classes = (AllowAny,)
     serializer_class = DoctorUpdateSerializer
 

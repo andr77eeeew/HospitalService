@@ -3,12 +3,12 @@ from users.models import User, Role
 
 
 class PatientSerializer(serializers.ModelSerializer):
-    role = serializers.StringRelatedField()
+    roles = serializers.StringRelatedField()
     avatar = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ('id', 'avatar', 'first_name', 'last_name', 'email', 'phone', 'gender', 'date_birth', 'role')
+        fields = ('id', 'avatar', 'first_name', 'last_name', 'email', 'phone', 'gender', 'date_birth', 'roles')
 
     def get_avatar(self, obj):
         request = self.context.get('request')
@@ -20,7 +20,7 @@ class PatientSerializer(serializers.ModelSerializer):
 class PatientRegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('first_name', 'last_name', 'email', 'phone', 'role', 'gender', 'date_birth', 'password')
+        fields = ('first_name', 'last_name', 'email', 'phone', 'roles', 'gender', 'date_birth', 'password')
         extra_kwargs = {
             'password': {'write_only': True},
             'style': {'input_type': 'password'}
@@ -44,7 +44,7 @@ class PatientRegisterSerializer(serializers.ModelSerializer):
             last_name=validated_data.get('last_name'),
             email=validated_data.get('email'),
             phone=validated_data.get('phone'),
-            role=patient_role,
+            roles=patient_role,
             gender=validated_data.get('gender'),
             date_birth=validated_data.get('date_birth'),
             password=password,  # передаем пароль
