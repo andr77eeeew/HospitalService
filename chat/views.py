@@ -15,10 +15,10 @@ class ChatRoomView(GenericAPIView):
     authentication_classes = [JWTAuthentication]
 
     def post(self, request):
-        if request.user.role.role == 'doctor':
+        if request.user.roles.role == 'doctor':
             doctor = request.user.id
             patient = request.data.get('user_id')
-        elif request.user.role.role == 'patient':
+        elif request.user.roles.role == 'patient':
             doctor = request.data.get('user_id')
             patient = request.user.id
         else:
@@ -42,9 +42,9 @@ class RecentlyChat(APIView):
     def get(self, request):
         user = request.user
 
-        if user.role.role == 'doctor':
+        if user.roles.role == 'doctor':
             queryset = ChatRoom.objects.filter(doctor=user)
-        elif user.role.role == 'patient':
+        elif user.roles.role == 'patient':
             queryset = ChatRoom.objects.filter(patient=user)
         else:
             queryset = []
