@@ -14,17 +14,17 @@ class ChatRoomSerializer(serializers.ModelSerializer):
 
     def get_user_name(self, obj):
         request_user = self.context['request_user']
-        if request_user.role.role == 'doctor':
+        if request_user.roles.role == 'doctor':
             return f"{obj.patient.first_name} {obj.patient.last_name}"
-        elif request_user.role.role == 'patient':
+        elif request_user.roles.role == 'patient':
             return f"{obj.doctor.first_name} {obj.doctor.last_name}"
         return None
 
     def get_user_id(self, obj):
         request_user = self.context['request_user']
-        if request_user.role.role == 'doctor':
+        if request_user.roles.role == 'doctor':
             return obj.patient.id
-        elif request_user.role.role == 'patient':
+        elif request_user.roles.role == 'patient':
             return obj.doctor.id
         return None
 
@@ -33,9 +33,9 @@ class ChatRoomSerializer(serializers.ModelSerializer):
         request_user = self.context['request_user']
 
         # Depending on the role, fetch the patient's or doctor's avatar
-        if request_user.role.role == 'doctor':
+        if request_user.roles.role == 'doctor':
             avatar_url = obj.patient.avatar.url if obj.patient.avatar else None
-        elif request_user.role.role == 'patient':
+        elif request_user.roles.role == 'patient':
             avatar_url = obj.doctor.avatar.url if obj.doctor.avatar else None
         else:
             avatar_url = None
