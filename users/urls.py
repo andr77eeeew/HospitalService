@@ -11,4 +11,6 @@ urlpatterns = [
     path('subroles/', views.GetSubRolesView.as_view(), name='users-subroles'),
     path('request-reset/', views.RequestPasswordReset.as_view(), name='request-reset'),
     path('reset-password/<token>/', views.ResetPasswordView.as_view(), name='reset-password'),
+    path('admin/users/', views.UsersForAdmin.as_view(), name='admin-users'),
+    path('admin/block/', views.BlockUserView.as_view(), name='admin-roles'),
 ]

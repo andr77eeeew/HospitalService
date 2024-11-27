@@ -1,3 +1,4 @@
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
 from django.views.static import serve
@@ -5,9 +6,9 @@ from django.conf import settings
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-static_and_media_urls = [
-    path('static/<path:path>', serve, {'document_root': settings.STATIC_ROOT}),
-    path('media/<path:path>', serve, {'document_root': settings.MEDIA_ROOT}),
+media_and_static_url = [
+    path('media/<path:path>', serve, kwargs={'document_root': settings.MEDIA_ROOT}),
+    path('static/<path:path>', serve, kwargs={'document_root': settings.STATIC_ROOT}),
 ]
 
 urlpatterns = [
@@ -25,5 +26,4 @@ urlpatterns = [
     path('chat/', include('chat.urls')),
 ]
 
-# Добавляем статические и медиа файлы
-urlpatterns += static_and_media_urls
+urlpatterns += media_and_static_url
