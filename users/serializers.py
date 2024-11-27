@@ -7,14 +7,14 @@ User = get_user_model()
 
 
 class UserSerializer(serializers.ModelSerializer):
-    role = serializers.StringRelatedField()
+    roles = serializers.StringRelatedField()
     sub_role = serializers.StringRelatedField()
     avatar = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ('id', 'avatar', 'first_name', 'last_name', 'email', 'phone', 'gender', 'date_birth', 'role',
-                  "sub_role")
+        fields = ('id', 'avatar', 'first_name', 'last_name', 'email', 'phone', 'gender', 'date_birth', 'roles',
+                  "sub_role", "is_blocked")
 
     def get_avatar(self, obj):
         request = self.context.get('request')

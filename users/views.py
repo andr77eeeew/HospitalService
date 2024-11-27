@@ -6,8 +6,9 @@ from django.utils.html import strip_tags
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 from django.shortcuts import get_object_or_404
+from rest_framework.generics import GenericAPIView
 from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -29,7 +30,7 @@ class GetSubRolesView(APIView):
         doctor_role = 'doctor'
 
         sub_roles = SubRole.objects.filter(
-            user__role__role=doctor_role
+            user__roles__role=doctor_role
         ).distinct().values('id', 'sub_role')
 
         return Response({
@@ -49,7 +50,7 @@ class LoginView(generics.GenericAPIView):
             refresh = RefreshToken.for_user(user)
             return Response({
                 "user": user.email,
-                "role": user.role.role,
+                "role": user.roles.role,
                 "Admin": user.is_staff,
                 "refreshToken": str(refresh),
                 "accessToken": str(refresh.access_token),
@@ -117,12 +118,12 @@ class GetSpecificUserView(generics.RetrieveAPIView):
     def get(self, request, *args, **kwargs):
         user_id = request.query_params.get('user_id')
         user = request.user
-        if user.role.role == 'patient' or user.role.role == 'admin':
-            user = get_object_or_404(User, id=user_id, role__role='doctor')
+        if user.roles.role == 'patient' or user.roles.role == 'admin':
+            user = get_object_or_404(User, id=user_id, roles__role='doctor')
             serializer = self.serializer_class(user, context={'request': request})
             return Response(serializer.data)
-        elif user.role.role == 'doctor' or user.role.role == 'admin':
-            user = get_object_or_404(User, id=user_id, role__role='patient')
+        elif user.roles.role == 'doctor' or user.roles.role == 'admin':
+            user = get_object_or_404(User, id=user_id, roles__role='patient')
             serializer = self.serializer_class(user, context={'request': request})
             return Response(serializer.data)
 
@@ -188,3 +189,48 @@ class ResetPasswordView(generics.GenericAPIView):
             return Response({"message": "Password reset successfully."}, status=status.HTTP_200_OK)
 
         return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+
+
+class UsersForAdmin(GenericAPIView):
+    authentication_classes = [JWTAuthentication, ]
+    permission_classes = [IsAuthenticated, IsAdminUser]
+    serializer_class = UserSerializer
+
+    def get_queryset(self):
+        return User.objects.all()  # Возвращаем QuerySet
+
+    def get(self, request, *args, **kwargs):
+        users = self.get_queryset()  # Получаем QuerySet
+        serializer = self.serializer_class(users, many=True, context={'request': self.request})
+        return Response(serializer.data)
+
+
+class BlockUserView(generics.UpdateAPIView):
+    permission_classes = [IsAuthenticated, IsAdminUser]
+    authentication_classes = [JWTAuthentication, ]
+    lookup_field = 'user_id'
+    lookup_url_kwarg = 'user_id'
+
+    def update(self, request, *args, **kwargs):
+        user_id = request.data.get('user_id')
+        if not user_id:
+            return Response({"error": "User ID is required"}, status=400)
+
+        try:
+            user_id = int(user_id)  # Приводим к числу для дополнительной проверки
+        except ValueError:
+            return Response({"error": "Invalid User ID"}, status=400)
+
+        try:
+            user = User.objects.get(pk=user_id)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=404)
+
+        user.is_blocked = not user.is_blocked
+        user.save()
+
+        return Response({
+            "message": f"User {'blocked' if user.is_blocked else 'unblocked'} successfully",
+            "user_id": user_id,
+            "is_blocked": user.is_blocked
+        })
