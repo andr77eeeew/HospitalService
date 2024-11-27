@@ -1,7 +1,6 @@
 import base64
 import binascii
 import json
-import logging
 from asgiref.sync import sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.core.files.base import ContentFile
@@ -9,8 +8,6 @@ from django.db.models import F
 
 from chat.models import ChatRoom, ChatHistory
 from chat.utils import format_message, format_notification
-
-logger = logging.getLogger('chat')
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -20,14 +17,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
         self.user = self.scope['user']
 
         self.room = await ChatRoom.objects.aget(name=self.room_name)
-        logger.info(
-            f"User {self.user.first_name} {self.user.last_name} is connected to room {self.room_name} active users {self.room.active_users}")
 
         if self.user.is_anonymous:
-            logger.warning("Анонимный пользователь попытался подключиться")
             await self.close()
         else:
-            active_users = await self.update_active_users(increment=True)
+            await self.update_active_users(increment=True)
 
             self.room_group_name = f'chat_{self.room_name}'
             await self.channel_layer.group_add(
@@ -40,33 +34,26 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.mark_unread_messages_as_read()
 
             await self.send_history()
-            logger.info(f'Active users in room "{self.room_name}": {active_users}')
 
     async def disconnect(self, close_code):
-        active_users = await self.update_active_users(increment=False)
+        await self.update_active_users(increment=False)
 
         await self.channel_layer.group_discard(
             self.room_group_name,
             self.channel_name
         )
 
-        logger.info(f'Active users in room "{self.room_name}": {active_users}')
-
     async def update_active_users(self, increment=True):
-        try:
-            if increment:
-                self.room.active_users = F('active_users') + 1
-            else:
-                self.room.active_users = F('active_users') - 1
+        if increment:
+            self.room.active_users = F('active_users') + 1
+        else:
+            self.room.active_users = F('active_users') - 1
 
-            await self.room.asave()
+        await self.room.asave()
 
-            updated_room = await ChatRoom.objects.aget(name=self.room_name)
-            logger.info(f'Active users in room "{self.room_name}": {updated_room.active_users}')
+        updated_room = await ChatRoom.objects.aget(name=self.room_name)
 
-            return updated_room.active_users
-        except Exception as e:
-            logger.error(f"Error while updating active users: {str(e)}")
+        return updated_room.active_users
 
     async def mark_unread_messages_as_read(self):
         active_users = await ChatRoom.objects.aget(name=self.room_name)
@@ -74,7 +61,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 room=self.room,
                 read_status=False,
         ).select_related('sender', 'room', 'replied_to'):
-            logger.info(f"Помечаем сообщение {message.id} как прочитанное")
 
             if message.sender != self.user:
                 message.read_status = True
@@ -90,45 +76,30 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     )
 
     async def send_history(self):
-        try:
-            history = []
-            async for messages in (ChatHistory.objects.filter(room=self.room)
-                    .order_by('timestamp')
-                    .select_related('sender', 'room', 'replied_to')):
-                formatted_message = await format_message(messages)
-                logger.info(f"Форматированное сообщение: {formatted_message}")
-                history.append(formatted_message)
-            await self.send(text_data=json.dumps({'type': 'chat_history', 'messages': history}))
-        except Exception as e:
-            logger.error(f"Error while sending history: {str(e)}")
+        history = []
+        async for messages in (ChatHistory.objects.filter(room=self.room)
+                .order_by('timestamp')
+                .select_related('sender', 'room', 'replied_to')):
+            formatted_message = await format_message(messages)
+            history.append(formatted_message)
+        await self.send(text_data=json.dumps({'type': 'chat_history', 'messages': history}))
 
     async def create_notification(self, new_message):
-        try:
-            active_users = await ChatRoom.objects.aget(name=self.room_name)
-            logger.info(f"Количество активных пользователей в комнате {self.room_name}: {active_users.active_users}")
+        active_users = await ChatRoom.objects.aget(name=self.room_name)
 
-            if active_users.active_users == 1:
-                logger.info("В комнате один пользователь.")
-                other_user = await sync_to_async(
-                    lambda: self.room.patient if self.scope['user'] == self.room.doctor else self.room.doctor)()
-                logger.info(f"Отправляем уведомление пользователю {other_user.id}")
+        if active_users.active_users == 1:
+            other_user = await sync_to_async(
+                lambda: self.room.patient if self.scope['user'] == self.room.doctor else self.room.doctor)()
 
-                notification_data = await format_notification(new_message)
-                logger.info(f"Данные для уведомления: {notification_data}")
+            notification_data = await format_notification(new_message)
 
-                await self.channel_layer.group_send(
-                    f'notification_{other_user.id}',
-                    {
-                        'type': 'send_notification',
-                        'notification': notification_data
-                    }
-                )
-                logger.info(f"Уведомление отправлено в комнату уведомлений пользователя: notification_{other_user.id}")
-            else:
-                logger.info("В комнате больше одного пользователя, уведомление не требуется.")
-
-        except Exception as e:
-            logger.error(f"Ошибка при отправке уведомления пользователю: {e}")
+            await self.channel_layer.group_send(
+                f'notification_{other_user.id}',
+                {
+                    'type': 'send_notification',
+                    'notification': notification_data
+                }
+            )
 
     async def create_message(self, new_message):
         active_users = await ChatRoom.objects.aget(name=self.room_name)
@@ -146,7 +117,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'messages': formatted_message
             }
         )
-        logger.info(f"Message sent to WebSocket group of room: {self.room_group_name}")
 
         await self.create_notification(new_message)
 
@@ -164,33 +134,22 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.handle_delete_message(data)
 
     async def handle_text_message(self, data):
-        try:
-            message = data['message']
-            sender = self.scope['user']
-            replied_to_id = data.get('replied_to', None)
+        message = data['message']
+        sender = self.scope['user']
+        replied_to_id = data.get('replied_to', None)
 
-            logger.info(f"User {sender.id} sent a text message to room {self.room_name}: {message}")
+        replied_to_message = None
+        if replied_to_id:
+            replied_to_message = await ChatHistory.objects.aget(id=replied_to_id)
 
-            replied_to_message = None
-            if replied_to_id:
-                try:
-                    replied_to_message = await ChatHistory.objects.aget(id=replied_to_id)
-                    logger.info(f"Message {replied_to_id} found and attached as a reply.")
-                except ChatHistory.DoesNotExist:
-                    logger.error(f"Reply message with ID {replied_to_id} not found.")
+        new_message = await ChatHistory.objects.acreate(
+            room=self.room,
+            sender=sender,
+            message=message,
+            replied_to=replied_to_message
+        )
 
-            new_message = await ChatHistory.objects.acreate(
-                room=self.room,
-                sender=sender,
-                message=message,
-                replied_to=replied_to_message
-            )
-            logger.info(f"New message saved to database: {new_message.id}")
-
-            await self.create_message(new_message)
-
-        except Exception as e:
-            logger.error(f"Error processing text message: {str(e)}")
+        await self.create_message(new_message)
 
     @staticmethod
     def validate_and_add_padding(base64_string):
@@ -202,42 +161,30 @@ class ChatConsumer(AsyncWebsocketConsumer):
         return base64_string
 
     async def handle_media_message(self, data):
-        try:
-            media_data = data['media']
-            file_name = data.get('file_name', None)
-            file_type = data.get('file_type', None)
-            sender = self.scope['user']
-            replied_to_id = data.get('replied_to', None)
+        media_data = data['media']
+        file_name = data.get('file_name', None)
+        file_type = data.get('file_type', None)
+        sender = self.scope['user']
+        replied_to_id = data.get('replied_to', None)
 
-            logger.info(f"Пользователь {sender.id} отправил медиа-сообщение в комнату {self.room_name}")
+        media_data = await sync_to_async(self.validate_and_add_padding)(media_data)
 
-            media_data = await sync_to_async(self.validate_and_add_padding)(media_data)
-            replied_to_message = None
-            if replied_to_id:
-                replied_to_message = await ChatHistory.objects.aget(id=replied_to_id)
-                logger.info(f"Сообщение {replied_to_id} было найдено и привязано как ответ для медиа-сообщения")
+        replied_to_message = None
+        if replied_to_id:
+            replied_to_message = await ChatHistory.objects.aget(id=replied_to_id)
 
-            try:
-                media_file = ContentFile(base64.b64decode(media_data), name=f"{file_name}")
-                logger.info(f"Медиа-файл успешно создан для пользователя {sender.id}")
-            except binascii.Error as e:
-                error_message = f"Ошибка декодирования Base64 данных: {str(e)}"
-                logger.error(error_message)
-                raise ValueError(error_message)
+        media_file = ContentFile(base64.b64decode(media_data), name=f"{file_name}")
 
-            new_message = await ChatHistory.objects.acreate(
-                room=self.room,
-                sender=sender,
-                media=media_file,
-                file_type=file_type,
-                message='',
-                replied_to=replied_to_message
-            )
+        new_message = await ChatHistory.objects.acreate(
+            room=self.room,
+            sender=sender,
+            media=media_file,
+            file_type=file_type,
+            message='',
+            replied_to=replied_to_message
+        )
 
-            await self.create_message(new_message)
-
-        except Exception as e:
-            logger.error(f"Ошибка при обработке медиа-сообщения: {str(e)}")
+        await self.create_message(new_message)
 
     async def handle_edit_message(self, data):
         message_id = data['message_id']
@@ -310,13 +257,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
         }))
 
     async def send_notification(self, event):
-        try:
-            notification = event['notification']
-            await self.send(text_data=json.dumps({
-                'type': 'notification',
-                'notification': notification
-            }))
-            logger.info(f"Отправлено уведомление для пользователя: {notification}")
-
-        except Exception as e:
-            logger.error(f"Ошибка при отправке уведомления пользователю: {e}")
+        notification = event['notification']
+        await self.send(text_data=json.dumps({
+            'type': 'notification',
+            'notification': notification
+        }))
