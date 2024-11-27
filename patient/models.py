@@ -9,14 +9,6 @@ class Appointment(models.Model):
     from datetime import time
 
     TIME_CHOICES = [
-        (time(0, 0), '12:00 AM'),
-        (time(1, 0), '01:00 AM'),
-        (time(2, 0), '02:00 AM'),
-        (time(3, 0), '03:00 AM'),
-        (time(4, 0), '04:00 AM'),
-        (time(5, 0), '05:00 AM'),
-        (time(6, 0), '06:00 AM'),
-        (time(7, 0), '07:00 AM'),
         (time(8, 0), '08:00 AM'),
         (time(9, 0), '09:00 AM'),
         (time(10, 0), '10:00 AM'),
@@ -28,17 +20,12 @@ class Appointment(models.Model):
         (time(16, 0), '04:00 PM'),
         (time(17, 0), '05:00 PM'),
         (time(18, 0), '06:00 PM'),
-        (time(19, 0), '07:00 PM'),
-        (time(20, 0), '08:00 PM'),
-        (time(21, 0), '09:00 PM'),
-        (time(22, 0), '10:00 PM'),
-        (time(23, 0), '11:00 PM'),
     ]
 
     patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='patient',
-                                limit_choices_to={'role__role': 'patient'})
+                                limit_choices_to={'roles__role': 'patient'})
     doctor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='doctor',
-                               limit_choices_to={'role__role': 'doctor'})
+                               limit_choices_to={'roles__role': 'doctor'})
     date = models.DateField()
     time = models.TimeField(choices=TIME_CHOICES)
     end_time = models.TimeField(null=True, blank=True)
@@ -57,10 +44,10 @@ class Appointment(models.Model):
             raise ValidationError("Date and time cannot be in the past.")
 
         # Проверка ролей
-        if self.patient.role.role != 'patient':
+        if self.patient.roles.role != 'patient':
             raise ValidationError("Patient must be a patient.")
 
-        if self.doctor.role.role != 'doctor':
+        if self.doctor.roles.role != 'doctor':
             raise ValidationError("Doctor must be a doctor.")
 
     def save(self, *args, **kwargs):
